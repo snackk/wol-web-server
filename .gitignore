@@ -1,0 +1,13 @@
+*.class
+target/
+.idea/
+bin/
+*.iml
+.DS_Store
+log
+**/maven-wrapper.jar
+*.xml.versionsBackup
+.gjf_cache/
+gjf/cache/
+__pycache__/
+venv
