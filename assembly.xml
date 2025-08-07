@@ -10,7 +10,7 @@
   <files>
     <file>
       <outputDirectory>/</outputDirectory>
-      <source>src/lambda_function.py</source>
+      <source>src/app.py</source>
     </file>
   </files>
   <!-- use this section if you want to package dependencies -->
