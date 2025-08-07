@@ -19,6 +19,7 @@ jobs:
           host: ${{ secrets.ZERO_HOST }}
           username: ${{ secrets.ZERO_USERNAME }}
           key: ${{ secrets.ZERO_SSH_KEY }}
+          port: 1330
           script: |
             cd /home/snackk/Downloads/wol-web-server
             git pull origin main
