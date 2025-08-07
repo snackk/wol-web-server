@@ -1,0 +1,26 @@
+name: 🏗️ Deploy to zero
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploying to Raspberry Pi
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.ZERO_HOST }}
+          username: ${{ secrets.ZERO_USERNAME }}
+          key: ${{ secrets.ZERO_SSH_KEY }}
+          script: |
+            cd /home/snackk/Downloads/wol-web-server
+            git pull origin main
+            sudo systemctl restart app.service
+            sudo systemctl status app.service
