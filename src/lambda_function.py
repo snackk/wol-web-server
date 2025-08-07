@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for, Response
+from flask import Flask, jsonify, render_template_string, request, redirect, url_for, Response
 from wakeonlan import send_magic_packet
 from functools import wraps
 import requests
@@ -250,6 +250,16 @@ new Chart(ctx, {
 def send_wol():
     send_magic_packet(MAC, ip_address=IP)
     return redirect(url_for('index'))
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    health_data = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "service": "wol-app",
+        "version": "1.0.0"
+    }
+    return jsonify(health_data), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
