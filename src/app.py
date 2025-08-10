@@ -91,5 +91,28 @@ def health_check():
     }
     return jsonify(health_data), 200
 
+@app.route("/check-emby", methods=["GET"])
+@requires_auth
+def check_emby_server():
+    import socket
+
+    def can_reach_server(hostname, port, timeout=5):
+        try:
+            with socket.create_connection((hostname, port), timeout=timeout):
+                return True
+        except Exception:
+            return False
+
+    is_reachable = can_reach_server("emby.snackk-media.com", 443)
+
+    response_data = {
+        "reachable": is_reachable,
+        "server": "emby.snackk-media.com",
+        "port": 443,
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+
+    return jsonify(response_data), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
