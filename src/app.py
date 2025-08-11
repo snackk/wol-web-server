@@ -75,7 +75,7 @@ def index():
                            chart_labels=chart_labels,
                            chart_values=chart_values)
 
-@app.route("/send-wol/", methods=["POST"])
+@app.route("/send-wol", methods=["POST"])
 @requires_auth
 def send_wol():
     send_magic_packet(MAC, ip_address=IP)
