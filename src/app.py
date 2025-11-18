@@ -58,6 +58,14 @@ def create_period_segments(periods):
         segments.append({"status": status, "start": start, "end": end})
     return segments
 
+def trigger_esp12s_led_on():
+    url = f"http://{IP}/led_on"
+    try:
+        r = requests.get(url, timeout=5)
+        return r.status_code == 200
+    except Exception:
+        return False
+
 @app.route("/")
 @requires_auth
 def index():
@@ -78,13 +86,15 @@ def index():
 @app.route("/send-wol/", methods=["POST"])
 @requires_auth
 def send_wol():
-    send_magic_packet(MAC, ip_address=IP)
+    #send_magic_packet(MAC, ip_address=IP)
+    trigger_esp12s_led_on()
     return redirect(url_for('index'))
 
 @app.route("/wake", methods=["POST"])
 @requires_auth
 def wake():
-    send_magic_packet(MAC, ip_address=IP)
+    #send_magic_packet(MAC, ip_address=IP)
+    trigger_esp12s_led_on()
     return '', 200
 
 @app.route("/health", methods=["GET"])
