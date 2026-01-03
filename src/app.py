@@ -1,5 +1,4 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for, Response
-from wakeonlan import send_magic_packet
 from functools import wraps
 import requests
 import os
@@ -15,6 +14,22 @@ PASSWORD = os.environ.get('WOL_PASSWORD')
 
 STATUSCAKE_API_KEY = os.environ.get("STATUSCAKE_API_KEY")
 STATUSCAKE_TEST_ID = os.environ.get("STATUSCAKE_TEST_ID")
+
+AC_MAP = {
+    'sala': 'living-room-ac.local',
+    'suite': 'suite-ac.local',
+    'escritorio': 'office-ac.local',
+    'cozinha': 'kitchen-ac.local',
+    'visitas': 'visit-room-ac.local'
+}
+
+MODE_MAP = {
+    'cool': 'COOL',
+    'heat': 'HEAT',
+    'fan': 'FAN_ONLY',
+    'dry': 'DRY',
+    'auto': 'HEAT_COOL'
+}
 
 def check_auth(username, password):
     return username == USERNAME and password == PASSWORD
@@ -129,6 +144,41 @@ def check_emby_server():
     }
 
     return jsonify(response_data), 200
+
+@app.route("/climate", methods=["POST"])
+def set_climate():
+    data = request.json
+    room_id = data.get('roomId')
+    mode = data.get('mode')
+    temp = data.get('temp')
+    status = data.get('status')
+
+    if room_id not in AC_MAP:
+        return jsonify({"error": "Room not found!"}), 404
+
+    hostname = AC_MAP[room_id]
+
+    api_mode = 'OFF' if status == 'off' else MODE_MAP.get(mode, 'COOL')
+
+    target_url = f"http://{hostname}/climate/air_conditioner/set"
+    params = {
+        "mode": api_mode,
+        "temp": temp
+    }
+
+    try:
+        if api_mode == 'OFF':
+            response = requests.post(target_url, params={"mode": "OFF"}, timeout=5)
+        else:
+            response = requests.post(target_url, params=params, timeout=5)
+
+        return jsonify({
+            "success": response.status_code == 200,
+            "status_code": response.status_code,
+            "target": target_url
+        }), response.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
