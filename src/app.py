@@ -51,6 +51,8 @@ INT_MODE_MAP = {
 }
 
 def check_auth(username, password):
+    if not USERNAME or not PASSWORD:
+        return False
     return username == USERNAME and password == PASSWORD
 
 def authenticate():
@@ -205,7 +207,7 @@ def set_climate():
 def health_check():
     health_data = {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "service": "wol-app",
         "version": "1.0.0"
     }
@@ -230,7 +232,7 @@ def check_emby_server():
         "reachable": is_reachable,
         "server": "emby.snackk-media.com",
         "port": 443,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     }
 
     return jsonify(response_data), 200
