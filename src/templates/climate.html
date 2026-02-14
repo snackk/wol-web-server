@@ -10,6 +10,8 @@
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo.png">
 
   <style>
     :root {
@@ -105,9 +107,15 @@
 <body class="min-h-screen flex flex-col">
 
 <!-- Header -->
-<header class="safe-area-top sticky top-0 bg-[#1c1b1f]/80 backdrop-blur-md z-40 p-6 flex justify-between items-end h-32">
-  <div>
-    <h2 id="view-title" class="text-2xl font-bold">Home Dashboard</h2>
+<header class="safe-area-top sticky top-0 bg-[#1c1b1f]/80 backdrop-blur-md z-40 px-6 py-4 flex justify-between items-center">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-[#d0bcff] flex items-center justify-center shadow-lg shadow-[#d0bcff]/20">
+      <i class="fas fa-house-user text-[#381e72] text-lg"></i>
+    </div>
+    <div>
+      <h2 id="view-title" class="text-xl font-bold leading-tight">Home</h2>
+      <p class="text-[9px] text-[#938f99] uppercase tracking-[0.2em] font-medium">Dashboard</p>
+    </div>
   </div>
   <button onclick="sendWake()" class="w-10 h-10 rounded-full bg-[#2b2930] flex items-center justify-center border border-[#49454f] active:scale-90 transition-transform">
     <i class="fas fa-bolt text-[#d0bcff]"></i>
@@ -115,23 +123,25 @@
 </header>
 
 <!-- Main Content -->
-<main id="main-content" class="flex-1 overflow-y-auto px-6 pb-32 space-y-6">
+<main id="main-content" class="flex-1 overflow-y-auto px-6 pb-28 space-y-6">
   <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Estado</h3>
 
   <div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
     <div class="bg-[#2b2930] p-4 rounded-3xl min-w-[140px] border border-[#49454f]/30">
-      <i class="fas fa-droplet text-blue-400 mb-2"></i>
-      <p class="text-xs text-[#938f99]">Humidade média</p>
-      <p class="text-lg font-bold">42%</p>
+      <i class="fas fa-house-chimney text-blue-400 mb-2"></i>
+      <p class="text-xs text-[#938f99]">Temp. média indoor</p>
+      <p id="avg-indoor-temp" class="text-lg font-bold">--°C</p>
     </div>
     <div class="bg-[#2b2930] p-4 rounded-3xl min-w-[140px] border border-[#49454f]/30">
-      <i class="fas fa-leaf text-green-400 mb-2"></i>
-      <p class="text-xs text-[#938f99]">Qualidade Ar</p>
-      <p class="text-lg font-bold">Excelente</p>
+      <i class="fas fa-tree text-green-400 mb-2"></i>
+      <p class="text-xs text-[#938f99]">Temp. média outdoor</p>
+      <p id="avg-outdoor-temp" class="text-lg font-bold">--°C</p>
     </div>
   </div>
 
-  <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Dispositivos</h3>
+  <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Switches</h3>
+
+  <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Ar Condicionado</h3>
 
   <!-- AC Grid -->
   <div id="ac-grid" class="grid grid-cols-1 gap-4">
@@ -140,7 +150,7 @@
 </main>
 
 <!-- Navigation -->
-<nav class="fixed bottom-0 left-0 right-0 bg-[#2b2930]/90 backdrop-blur-xl border-t border-[#49454f] safe-area-bottom z-50 h-24 flex items-center px-8 shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
+<nav class="fixed bottom-0 left-0 right-0 bg-[#2b2930]/90 backdrop-blur-xl border-t border-[#49454f] safe-area-bottom z-50 h-20 flex items-center px-8 shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
   <button onclick="switchTab('home')" class="nav-btn flex-1 flex flex-col items-center gap-1 text-[#d0bcff]">
     <div class="w-16 h-8 rounded-full bg-[#d0bcff]/20 flex items-center justify-center">
       <i class="fas fa-house-chimney text-lg"></i>
@@ -155,8 +165,8 @@
 
 <!-- Detail Modal -->
 <div id="control-modal" class="fixed inset-0 z-[60] bg-black/80 hidden flex flex-col justify-end">
-  <div class="bg-[#1c1b1f] w-full rounded-t-[40px] p-8 view-content max-h-[90vh] overflow-y-auto">
-    <div class="w-12 h-1.5 bg-[#49454f] rounded-full mx-auto mb-8" onclick="closeModal()"></div>
+    <div id="modal-content" class="bg-[#1c1b1f] w-full rounded-t-[40px] p-8 view-content max-h-[90vh] overflow-y-auto transition-transform duration-200">
+    <div class="w-12 h-1.5 bg-[#49454f] rounded-full mx-auto mb-8 cursor-grab active:cursor-grabbing" id="swipe-handle"></div>
 
     <div class="flex justify-between items-start mb-8">
       <div>
@@ -208,36 +218,37 @@
 
 <script>
   const rooms = [
-    { id: 'sala', name: 'Sala de estar', temp: 21, target: 21, status: 'off', mode: 'auto' },
-    { id: 'suite', name: 'Suite', temp: 20, target: 19, status: 'off', mode: 'cool' },
-    { id: 'escritorio', name: 'Escritório', temp: 22, target: 20, status: 'off', mode: 'cool' },
-    { id: 'visitas', name: 'Quarto Visitas', temp: 19, target: 19, status: 'off', mode: 'cool' },
-    { id: 'cozinha', name: 'Cozinha', temp: 23, target: 19, status: 'off', mode: 'cool' }
+    { id: 'sala', name: 'Sala de estar', temp: 21, target: 21, status: 'OFF', mode: 'auto' },
+    { id: 'suite', name: 'Suite', temp: 20, target: 19, status: 'OFF', mode: 'cool' },
+    { id: 'escritorio', name: 'Escritório', temp: 22, target: 20, status: 'OFF', mode: 'cool' },
+    { id: 'visitas', name: 'Quarto Visitas', temp: 19, target: 19, status: 'OFF', mode: 'cool' },
+    { id: 'cozinha', name: 'Cozinha', temp: 23, target: 19, status: 'OFF', mode: 'cool' }
   ];
 
   let activeRoomId = null;
+  let roomBackup = null;
 
   function renderGrid() {
     const grid = document.getElementById('ac-grid');
     grid.innerHTML = rooms.map(room => `
-                <div onclick="openControl('${room.id}')" class="material-card p-5 flex items-center justify-between">
+                <div onclick="openControl('${room.id}')" class="material-card p-5 flex items-center justify-between ${room.online === false ? 'opacity-50' : ''}">
                     <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-2xl ${room.status === 'on' ? 'bg-[#d0bcff] text-[#381e72]' : 'bg-[#49454f] text-[#938f99]'} flex items-center justify-center transition-colors">
+                        <div class="w-12 h-12 rounded-2xl ${room.status === 'ON' ? 'bg-[#d0bcff] text-[#381e72]' : 'bg-[#49454f] text-[#938f99]'} flex items-center justify-center transition-colors">
                             <i class="fas ${getModeIcon(room.mode)} text-xl"></i>
                         </div>
                         <div>
                             <h4 class="font-bold text-base">${room.name}</h4>
                             <div class="flex items-center gap-2">
-                                <span class="status-badge ${room.status === 'on' ? 'bg-green-500/20 text-green-400' : 'bg-[#49454f] text-[#938f99]'}">
-                                    ${room.status === 'on' ? 'Ligado' : 'Desligado'}
+                                <span class="status-badge ${room.status === 'ON' ? 'bg-green-500/20 text-green-400' : 'bg-[#49454f] text-[#938f99]'}">
+                                    ${room.online === false ? 'Offline' : (room.status === 'ON' ? 'Ligado' : 'Desligado')}
                                 </span>
                                 <span class="text-[10px] text-[#938f99]">• ${room.mode.toUpperCase()}</span>
                             </div>
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="text-2xl font-bold">${room.temp}°</p>
-                        <p class="text-[10px] text-[#938f99]">Meta: ${room.target}°</p>
+                        <p class="text-2xl font-bold">${room.online === false ? '--' : room.temp}°</p>
+                        <p class="text-[10px] text-[#938f99]">Meta: ${room.online === false ? '--' : room.target}°</p>
                     </div>
                 </div>
             `).join('');
@@ -251,6 +262,10 @@
   function openControl(roomId) {
     activeRoomId = roomId;
     const room = rooms.find(r => r.id === roomId);
+    
+    // Backup current state
+    roomBackup = { ...room };
+
     document.getElementById('modal-room-name').textContent = room.name;
     document.getElementById('target-temp').textContent = room.target;
 
@@ -261,7 +276,21 @@
   }
 
   function closeModal() {
-    document.getElementById('control-modal').classList.add('hidden');
+    if (roomBackup && activeRoomId) {
+      const roomIndex = rooms.findIndex(r => r.id === activeRoomId);
+      if (roomIndex !== -1) {
+        rooms[roomIndex] = { ...roomBackup };
+      }
+    }
+    roomBackup = null;
+    activeRoomId = null;
+    
+    const modal = document.getElementById('control-modal');
+    const modalContent = document.getElementById('modal-content');
+    
+    modal.classList.add('hidden');
+    // Reset any transform applied by swiping
+    modalContent.style.transform = 'translateY(0)';
     renderGrid();
   }
 
@@ -285,6 +314,8 @@
       });
 
       if (response.ok) {
+        // Clear backup so closeModal doesn't revert
+        roomBackup = null;
         btn.className = "w-full bg-green-500 text-white font-bold py-4 rounded-full mt-12 mb-4";
         btn.innerHTML = '<i class="fas fa-check"></i> Concluído';
         setTimeout(() => {
@@ -323,14 +354,14 @@
 
   function toggleACPower() {
     const room = rooms.find(r => r.id === activeRoomId);
-    room.status = room.status === 'on' ? 'off' : 'on';
+    room.status = room.status === 'ON' ? 'OFF' : 'ON';
     updatePowerButtonUI(room.status);
     vibrate();
   }
 
   function updatePowerButtonUI(status) {
     const btn = document.getElementById('power-btn');
-    if (status === 'on') {
+    if (status === 'ON') {
       btn.className = 'w-14 h-14 rounded-2xl bg-green-500/20 text-green-400 flex items-center justify-center text-xl transition-all';
     } else {
       btn.className = 'w-14 h-14 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center text-xl transition-all';
@@ -362,8 +393,107 @@
     }
   }
 
+  async function updateStatus() {
+    try {
+      const response = await fetch('/climate/status');
+      if (response.ok) {
+        const data = await response.json();
+        const statuses = data.devices;
+        
+        // Update averages
+        if (data.averages) {
+          if (data.averages.indoor !== null) {
+            document.getElementById('avg-indoor-temp').textContent = `${data.averages.indoor}°C`;
+          }
+          if (data.averages.outdoor !== null) {
+            document.getElementById('avg-outdoor-temp').textContent = `${data.averages.outdoor}°C`;
+          }
+        }
+
+        rooms.forEach(room => {
+          if (statuses[room.id] && statuses[room.id].online) {
+            const s = statuses[room.id];
+            room.temp = s.temp !== undefined ? Math.round(s.temp * 10) / 10 : room.temp;
+            room.target = s.target !== undefined ? s.target : room.target;
+            room.status = s.power ? 'ON' : 'OFF';
+            room.mode = s.mode || room.mode;
+            room.online = true;
+          } else {
+            room.online = false;
+          }
+        });
+        renderGrid();
+      }
+    } catch (err) {
+      console.error('Failed to fetch status', err);
+    }
+  }
+
   window.onload = () => {
     renderGrid();
+    updateStatus();
+    setInterval(updateStatus, 10000);
+
+    // Close modal on click outside
+    const modal = document.getElementById('control-modal');
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Close modal on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Swipe down to close logic
+    const modalContent = document.getElementById('modal-content');
+    let touchStartY = 0;
+    let touchMoveY = 0;
+
+    modalContent.addEventListener('touchstart', (e) => {
+      // Only start swipe if at the top of the modal scroll
+      if (modalContent.scrollTop === 0) {
+        touchStartY = e.touches[0].clientY;
+        modalContent.style.transition = 'none';
+      } else {
+        touchStartY = 0;
+      }
+    }, { passive: true });
+
+    modalContent.addEventListener('touchmove', (e) => {
+      if (touchStartY === 0) return;
+      
+      touchMoveY = e.touches[0].clientY;
+      const deltaY = touchMoveY - touchStartY;
+      
+      if (deltaY > 0) {
+        // Apply transform for visual feedback
+        modalContent.style.transform = `translateY(${deltaY}px)`;
+        // Prevent default only if we are swiping down
+        if (e.cancelable) e.preventDefault();
+      }
+    }, { passive: false });
+
+    modalContent.addEventListener('touchend', () => {
+      if (touchStartY === 0) return;
+      
+      const deltaY = touchMoveY - touchStartY;
+      modalContent.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      
+      if (deltaY > 100) {
+        closeModal();
+      } else {
+        // Reset position
+        modalContent.style.transform = 'translateY(0)';
+      }
+      
+      touchStartY = 0;
+      touchMoveY = 0;
+    });
   };
 </script>
 </body>
