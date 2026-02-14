@@ -95,12 +95,17 @@ def send_wol():
     return redirect(url_for('index'))
 
 
-@app.route("/wake", methods=["POST"])
+@app.route("/switch/<device_id>/<state>", methods=["POST"])
 @requires_auth
-def wake():
-    hostname = SWITCHES_MAP['gaming']
-    state = 'ON'
-    target_url = f"http://{hostname}/api/state/{state}"
+def toggle_switch(device_id, state):
+    if device_id not in SWITCHES_MAP:
+        return jsonify({"error": "Switch not found"}), 404
+    
+    if state.upper() not in ["ON", "OFF"]:
+        return jsonify({"error": "Invalid state"}), 400
+
+    hostname = SWITCHES_MAP[device_id]
+    target_url = f"http://{hostname}/api/state/{state.upper()}"
 
     try:
         requests.put(target_url, timeout=5)
@@ -112,10 +117,16 @@ def wake():
 @app.route("/climate/status", methods=["GET"])
 @requires_auth
 def climate_status():
-    results = {"devices": {}, "averages": {"indoor": None, "outdoor": None}}
+    import socket
+    results = {
+        "devices": {}, 
+        "switches": {},
+        "averages": {"indoor": None, "outdoor": None}
+    }
     indoor_temps = []
     outdoor_temps = []
     
+    # Check ACs
     for room_id, hostname in AC_MAP.items():
         try:
             # First try the status API
@@ -143,6 +154,20 @@ def climate_status():
         except Exception:
             results["devices"][room_id] = {"online": False}
     
+    # Check Switches (Gaming PC status via Emby check)
+    def can_reach_server(hostname, port, timeout=3):
+        try:
+            with socket.create_connection((hostname, port), timeout=timeout):
+                return True
+        except Exception:
+            return False
+
+    is_emby_reachable = can_reach_server("emby.snackk-media.com", 443)
+    results["switches"]["gaming"] = {
+        "status": "ON" if is_emby_reachable else "OFF",
+        "name": "Gaming PC"
+    }
+
     if indoor_temps:
         results["averages"]["indoor"] = round(sum(indoor_temps) / len(indoor_temps), 1)
     if outdoor_temps:

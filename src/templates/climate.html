@@ -117,9 +117,6 @@
       <p class="text-[9px] text-[#938f99] uppercase tracking-[0.2em] font-medium">Dashboard</p>
     </div>
   </div>
-  <button onclick="sendWake()" class="w-10 h-10 rounded-full bg-[#2b2930] flex items-center justify-center border border-[#49454f] active:scale-90 transition-transform">
-    <i class="fas fa-bolt text-[#d0bcff]"></i>
-  </button>
 </header>
 
 <!-- Main Content -->
@@ -140,6 +137,29 @@
   </div>
 
   <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Switches</h3>
+  <div id="switches-grid" class="grid grid-cols-1 gap-4">
+    <!-- Gaming PC Switch -->
+    <div onclick="toggleSwitch('gaming')" class="material-card p-5 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div id="switch-icon-gaming" class="w-12 h-12 rounded-2xl bg-[#49454f] text-[#938f99] flex items-center justify-center transition-colors">
+          <i class="fas fa-desktop text-xl"></i>
+        </div>
+        <div>
+          <h4 class="font-bold text-base">Gaming PC</h4>
+          <div class="flex items-center gap-2">
+            <span id="switch-status-gaming" class="status-badge bg-[#49454f] text-[#938f99]">
+              Desligado
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center">
+        <button id="switch-btn-gaming" class="w-10 h-10 rounded-full bg-[#2b2930] flex items-center justify-center border border-[#49454f] active:scale-90 transition-transform">
+          <i class="fas fa-bolt text-[#938f99]"></i>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Ar Condicionado</h3>
 
@@ -224,6 +244,10 @@
     { id: 'visitas', name: 'Quarto Visitas', temp: 19, target: 19, status: 'OFF', mode: 'cool' },
     { id: 'cozinha', name: 'Cozinha', temp: 23, target: 19, status: 'OFF', mode: 'cool' }
   ];
+
+  const switches = {
+    gaming: { status: 'OFF', name: 'Gaming PC' }
+  };
 
   let activeRoomId = null;
   let roomBackup = null;
@@ -376,10 +400,56 @@
     });
   }
 
+  async function toggleSwitch(id) {
+    vibrate();
+    const sw = switches[id];
+    const newStatus = sw.status === 'ON' ? 'OFF' : 'ON';
+    
+    // Optimistic update
+    updateSwitchUI(id, newStatus);
+
+    try {
+      const response = await fetch(`/switch/${id}/${newStatus}`, { method: 'POST' });
+      if (!response.ok) throw new Error('Failed');
+      sw.status = newStatus;
+    } catch (e) {
+      // Revert on error
+      updateSwitchUI(id, sw.status);
+      console.error('Failed to toggle switch', e);
+    }
+  }
+
+  function updateSwitchUI(id, status) {
+    const icon = document.getElementById(`switch-icon-${id}`);
+    const badge = document.getElementById(`switch-status-${id}`);
+    const btn = document.getElementById(`switch-btn-${id}`);
+    const btnIcon = btn ? btn.querySelector('i') : null;
+
+    if (status === 'ON') {
+      icon.className = 'w-12 h-12 rounded-2xl bg-[#d0bcff] text-[#381e72] flex items-center justify-center transition-colors';
+      badge.className = 'status-badge bg-green-500/20 text-green-400';
+      badge.textContent = 'Ligado';
+      if (btn) {
+        btn.classList.replace('bg-[#2b2930]', 'bg-[#d0bcff]/20');
+        btn.classList.replace('border-[#49454f]', 'border-[#d0bcff]/30');
+      }
+      if (btnIcon) btnIcon.className = 'fas fa-bolt text-[#d0bcff]';
+    } else {
+      icon.className = 'w-12 h-12 rounded-2xl bg-[#49454f] text-[#938f99] flex items-center justify-center transition-colors';
+      badge.className = 'status-badge bg-[#49454f] text-[#938f99]';
+      badge.textContent = 'Desligado';
+      if (btn) {
+        btn.classList.replace('bg-[#d0bcff]/20', 'bg-[#2b2930]');
+        btn.classList.replace('border-[#d0bcff]/30', 'border-[#49454f]');
+      }
+      if (btnIcon) btnIcon.className = 'fas fa-bolt text-[#938f99]';
+    }
+  }
+
   async function sendWake() {
     vibrate();
     try {
-      await fetch('/wake', { method: 'POST' });
+      await fetch('/switch/gaming/ON', { method: 'POST' });
     } catch (e) {}
   }
 
@@ -408,6 +478,16 @@
           if (data.averages.outdoor !== null) {
             document.getElementById('avg-outdoor-temp').textContent = `${data.averages.outdoor}°C`;
           }
+        }
+
+        // Update switches
+        if (data.switches) {
+          Object.keys(data.switches).forEach(id => {
+            if (switches[id]) {
+              switches[id].status = data.switches[id].status;
+              updateSwitchUI(id, switches[id].status);
+            }
+          });
         }
 
         rooms.forEach(room => {
