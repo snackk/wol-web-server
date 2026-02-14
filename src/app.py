@@ -6,9 +6,6 @@ from datetime import datetime, timezone
 
 app = Flask(__name__)
 
-MAC = os.environ.get('MAC')
-IP = os.environ.get('IP')
-
 USERNAME = os.environ.get('WOL_USERNAME')
 PASSWORD = os.environ.get('WOL_PASSWORD')
 
@@ -16,11 +13,15 @@ STATUSCAKE_API_KEY = os.environ.get("STATUSCAKE_API_KEY")
 STATUSCAKE_TEST_ID = os.environ.get("STATUSCAKE_TEST_ID")
 
 AC_MAP = {
-    'sala': 'living-room-ac.local',
-    'suite': 'suite-ac.local',
-    'escritorio': 'office-ac.local',
-    'cozinha': 'kitchen-ac.local',
-    'visitas': 'visit-room-ac.local'
+    'sala': 'living-room.local',
+    'suite': 'suite.local',
+    'escritorio': 'office.local',
+    'cozinha': 'kitchen.local',
+    'visitas': 'guest-room.local'
+}
+
+SWITCHES_MAP = {
+    'gaming': 'pc-switch.local'
 }
 
 MODE_MAP = {
@@ -49,38 +50,6 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return decorated
 
-def fetch_statuscake_periods(api_key, test_id, n=20):
-    url = f"https://api.statuscake.com/v1/uptime/{test_id}/periods?limit={n}"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Accept": "application/json"
-    }
-    try:
-        r = requests.get(url, headers=headers, timeout=10)
-        if r.status_code != 200:
-            return []
-        data = r.json().get("data", [])
-        return data
-    except Exception:
-        return []
-
-def create_period_segments(periods):
-    segments = []
-    for entry in reversed(periods):
-        status = entry['status']
-        start = entry.get("created_at")
-        end = entry.get("ended_at") or datetime.now(timezone.utc).isoformat()
-        segments.append({"status": status, "start": start, "end": end})
-    return segments
-
-def trigger_esp12s_led_on():
-    url = f"http://{IP}/led_on"
-    try:
-        r = requests.get(url, timeout=5)
-        return r.status_code == 200
-    except Exception:
-        return False
-
 @app.route("/")
 @requires_auth
 def index():
@@ -101,15 +70,28 @@ def index():
 @app.route("/send-wol/", methods=["POST"])
 @requires_auth
 def send_wol():
-    #send_magic_packet(MAC, ip_address=IP)
-    trigger_esp12s_led_on()
+    hostname = SWITCHES_MAP['gaming']
+    state = 'ON'
+    target_url = f"http://{hostname}/api/state/{state}"
+
+    try:
+        requests.put(target_url, timeout=5)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
     return redirect(url_for('index'))
 
 @app.route("/wake", methods=["POST"])
 @requires_auth
 def wake():
-    #send_magic_packet(MAC, ip_address=IP)
-    trigger_esp12s_led_on()
+    hostname = SWITCHES_MAP['gaming']
+    state = 'ON'
+    target_url = f"http://{hostname}/api/state/{state}"
+
+    try:
+        requests.put(target_url, timeout=5)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     return '', 200
 
 @app.route("/health", methods=["GET"])
@@ -179,6 +161,31 @@ def set_climate():
         }), response.status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+def fetch_statuscake_periods(api_key, test_id, n=20):
+    url = f"https://api.statuscake.com/v1/uptime/{test_id}/periods?limit={n}"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "application/json"
+    }
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        if r.status_code != 200:
+            return []
+        data = r.json().get("data", [])
+        return data
+    except Exception:
+        return []
+
+def create_period_segments(periods):
+    segments = []
+    for entry in reversed(periods):
+        status = entry['status']
+        start = entry.get("created_at")
+        end = entry.get("ended_at") or datetime.now(timezone.utc).isoformat()
+        segments.append({"status": status, "start": start, "end": end})
+    return segments
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
