@@ -14,6 +14,14 @@ def serve_manifest():
 def serve_logo():
     return send_from_directory('static', 'logo.png')
 
+@app.route("/gata")
+def serve_gata():
+    return send_from_directory('static', 'gata.html')
+
+@app.route("/task")
+def serve_task():
+    return send_from_directory('static', 'task.html')
+
 USERNAME = os.environ.get('WOL_USERNAME')
 PASSWORD = os.environ.get('WOL_PASSWORD')
 
@@ -236,11 +244,6 @@ def check_emby_server():
     }
 
     return jsonify(response_data), 200
-
-
-@app.route("/gata", methods=["GET"])
-def gata():
-    return render_template('gata.html')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)

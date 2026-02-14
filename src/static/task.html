@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarefa: PATATIBENS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Oswald:wght@500;700&display=swap');
+
+    :root {
+      --tm-red: #b91c1c;
+      --tm-gold: #fbbf24;
+      --tm-paper: #fdfbf7;
+    }
+
+    body {
+      background-color: #292524;
+      background-image: radial-gradient(#44403c 1px, transparent 1px);
+      background-size: 20px 20px;
+      font-family: 'Courier Prime', monospace;
+      overflow-x: hidden;
+    }
+
+    .taskmaster-font {
+      font-family: 'Oswald', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .wax-seal {
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle at 30% 30%, #dc2626, #991b1b);
+      border-radius: 50%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 -5px 10px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 4px solid #7f1d1d;
+    }
+
+    .wax-seal:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 15px rgba(0,0,0,0.4), inset 0 -5px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Irregular edges for wax seal */
+    .wax-seal::after {
+      content: '';
+      position: absolute;
+      top: -5px; left: -5px; right: -5px; bottom: -5px;
+      border-radius: 52% 48% 51% 49% / 53% 47% 53% 47%;
+      border: 2px dashed rgba(127, 29, 29, 0.5);
+      animation: pulse-border 2s infinite;
+    }
+
+    .seal-text {
+      color: #7f1d1d;
+      font-size: 2.5rem;
+      font-weight: bold;
+      font-family: 'Times New Roman', serif;
+      text-shadow: 0 1px 1px rgba(255,255,255,0.2);
+    }
+
+    .paper-card {
+      background-color: var(--tm-paper);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d6d3d1' fill-opacity='0.1'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' /%3E%3C/g%3E%3C/svg%3E");
+      transform: rotate(-1deg);
+    }
+
+    .typewriter-text {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: #1c1917;
+    }
+
+    .countdown-item {
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Envelope Animation Classes */
+    .envelope-container {
+      perspective: 1000px;
+    }
+
+    .fade-in {
+      animation: fadeIn 1.5s ease-in forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 text-stone-200">
+
+<!-- DEBUG BUTTON (Remove before showing her if you want strict security,
+     but useful for you to test now. Click bottom right corner.) -->
+<div onclick="skipTimer()" class="fixed bottom-0 right-0 w-10 h-10 cursor-pointer z-50 opacity-0 hover:opacity-100" title="Click to Test"></div>
+
+<!-- MAIN CONTAINER -->
+<main class="w-full max-w-2xl text-center relative">
+
+  <!-- STAGE 1: COUNTDOWN -->
+  <div id="countdown-stage" class="flex flex-col items-center space-y-8">
+    <h1 class="taskmaster-font text-4xl md:text-6xl text-red-600 drop-shadow-lg mb-4">
+      Patatibens
+    </h1>
+    <p class="text-stone-400 text-lg uppercase tracking-widest mb-6">A tua tarefa começa em:</p>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+      <div class="countdown-item p-4 rounded-lg flex flex-col items-center">
+        <span id="days" class="text-4xl md:text-5xl font-bold text-yellow-500 font-mono">00</span>
+        <span class="text-xs uppercase tracking-wider mt-2">Dias</span>
+      </div>
+      <div class="countdown-item p-4 rounded-lg flex flex-col items-center">
+        <span id="hours" class="text-4xl md:text-5xl font-bold text-yellow-500 font-mono">00</span>
+        <span class="text-xs uppercase tracking-wider mt-2">Horas</span>
+      </div>
+      <div class="countdown-item p-4 rounded-lg flex flex-col items-center">
+        <span id="minutes" class="text-4xl md:text-5xl font-bold text-yellow-500 font-mono">00</span>
+        <span class="text-xs uppercase tracking-wider mt-2">Minutos</span>
+      </div>
+      <div class="countdown-item p-4 rounded-lg flex flex-col items-center">
+        <span id="seconds" class="text-4xl md:text-5xl font-bold text-yellow-500 font-mono">00</span>
+        <span class="text-xs uppercase tracking-wider mt-2">Segundos</span>
+      </div>
+    </div>
+
+    <div class="mt-12 opacity-50">
+      <p class="text-sm italic">O Taskmaster espera-te às 10H do teu aniversário :)</p>
+    </div>
+  </div>
+
+  <!-- STAGE 2: THE ENVELOPE -->
+  <div id="envelope-stage" class="hidden flex flex-col items-center justify-center min-h-[50vh] fade-in">
+    <h2 class="taskmaster-font text-3xl mb-8 text-stone-300">A TUA TAREFA ESTÁ À ESPERA</h2>
+
+    <div class="relative group cursor-pointer" onclick="openTask()">
+      <!-- Envelope Body -->
+      <div class="w-80 h-56 bg-stone-200 rounded-md shadow-2xl relative flex items-center justify-center transform transition-transform group-hover:scale-105">
+        <!-- Envelope Flap Lines -->
+        <div class="absolute top-0 left-0 w-full h-full border-4 border-stone-300 rounded-md pointer-events-none"></div>
+        <div class="absolute w-0 h-0 border-l-[160px] border-l-transparent border-r-[160px] border-r-transparent border-t-[110px] border-t-stone-300 top-0 left-0 drop-shadow-md"></div>
+
+        <!-- The Seal -->
+        <div class="wax-seal z-10 relative -mt-4">
+          <span class="seal-text">TM</span>
+        </div>
+      </div>
+      <p class="mt-6 text-stone-400 text-sm animate-pulse">Clica no selo para abrir a tarefa.</p>
+    </div>
+  </div>
+
+  <!-- STAGE 3: THE TASK CARD -->
+  <div id="task-stage" class="hidden fade-in w-full perspective-1000">
+    <div class="paper-card p-8 md:p-12 max-w-xl mx-auto rounded-sm relative transform transition-all duration-700 rotate-1">
+
+      <!-- Task Header -->
+      <div class="border-b-2 border-stone-800 pb-4 mb-6 flex justify-between items-end">
+        <h2 class="taskmaster-font text-3xl text-red-800">Tarefa #29</h2>
+        <span class="font-mono text-stone-600 text-sm">29/11/2025</span>
+      </div>
+
+      <!-- Task Body -->
+      <div class="typewriter-text text-left space-y-6 text-stone-900 mb-8">
+        <p class="font-bold">Olá,</p>
+
+        <p>
+          Encontra os <strong>5 balões</strong> espalhados pela casa.
+        </p>
+        <p>
+          Rebenta-os e completa a tarefa que se encontra dentro de cada um.
+        </p>
+        <p>
+          Durante a prova, terás <strong>pompons presos às tuas mãos</strong>.
+        </p>
+        <p>
+          Apenas podes utilizar uma esferográfica e um telemóvel ou computador.
+        </p>
+        <p>
+          Tens 10 minutos para completar a prova.
+        </p>
+        <p class="font-bold text-xl text-center pt-4">
+          O teu tempo começa agora.
+        </p>
+      </div>
+
+      <!-- Action Button -->
+      <div id="start-btn-container">
+        <button onclick="startTaskTimer()" class="w-full bg-red-800 hover:bg-red-900 text-white font-bold py-4 px-6 rounded shadow-lg transform transition active:scale-95 taskmaster-font text-xl tracking-wider">
+          INICIAR CONTAGEM (10 MIN)
+        </button>
+      </div>
+
+      <!-- The Task Timer (Hidden initially) -->
+      <div id="task-timer-display" class="hidden text-center pt-4 border-t-2 border-stone-300 mt-6">
+        <div class="text-6xl font-mono font-bold text-red-700" id="final-timer">05:00</div>
+        <p class="text-sm text-stone-500 mt-2 animate-pulse">Boas prendas ;)</p>
+      </div>
+
+      <!-- Footer Decoration -->
+      <div class="absolute top-4 right-4 w-16 h-16 border-4 border-red-800 rounded-full opacity-20 transform rotate-12 flex items-center justify-center">
+        <span class="taskmaster-font text-xs text-red-800 text-center leading-none">SEAL OF<br>APPROVAL</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // --- CONFIGURATION ---
+  // Target Date: November 29, 2025, 10:00:00 AM
+  const targetDate = new Date("2025-11-29T10:00:00").getTime();
+
+  // --- ELEMENTS ---
+  const countdownStage = document.getElementById('countdown-stage');
+  const envelopeStage = document.getElementById('envelope-stage');
+  const taskStage = document.getElementById('task-stage');
+  const startBtnContainer = document.getElementById('start-btn-container');
+  const taskTimerDisplay = document.getElementById('task-timer-display');
+  const finalTimerElement = document.getElementById('final-timer');
+
+  // --- COUNTDOWN LOGIC ---
+  const interval = setInterval(function() {
+    const now = new Date().getTime();
+    const distance = targetDate - now;
+
+    if (distance < 0) {
+      // Time is up!
+      clearInterval(interval);
+      showEnvelope();
+    } else {
+      // Calculate time
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      // Update DOM
+      document.getElementById("days").innerText = String(days).padStart(2, '0');
+      document.getElementById("hours").innerText = String(hours).padStart(2, '0');
+      document.getElementById("minutes").innerText = String(minutes).padStart(2, '0');
+      document.getElementById("seconds").innerText = String(seconds).padStart(2, '0');
+    }
+  }, 1000);
+
+  // --- STAGE TRANSITIONS ---
+
+  function showEnvelope() {
+    countdownStage.classList.add('hidden');
+    envelopeStage.classList.remove('hidden');
+    // Play a sound could go here
+  }
+
+  function openTask() {
+    envelopeStage.classList.add('hidden');
+    taskStage.classList.remove('hidden');
+  }
+
+  // --- DEV TOOL (Hidden) ---
+  // Click the bottom right corner of the screen to skip waiting
+  function skipTimer() {
+    clearInterval(interval);
+    showEnvelope();
+  }
+
+  // --- 5 MINUTE TASK TIMER ---
+  function startTaskTimer() {
+    startBtnContainer.classList.add('hidden');
+    taskTimerDisplay.classList.remove('hidden');
+
+    let timeLeft = 10 * 60; // 5 minutes in seconds
+
+    const taskInterval = setInterval(() => {
+      timeLeft--;
+
+      const m = Math.floor(timeLeft / 60);
+      const s = timeLeft % 60;
+
+      finalTimerElement.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+      if (timeLeft <= 0) {
+        clearInterval(taskInterval);
+        finalTimerElement.innerText = "TEMPO ESGOTADO";
+        finalTimerElement.classList.remove('text-red-700');
+        finalTimerElement.classList.add('text-stone-900');
+        alert("Pára tudo! O tempo acabou.");
+      } else if (timeLeft <= 30) {
+        // Panic mode - text gets bigger and redder
+        finalTimerElement.classList.add('animate-ping');
+      }
+
+    }, 1000);
+  }
+</script>
+</body>
+</html>

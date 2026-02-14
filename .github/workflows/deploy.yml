@@ -19,7 +19,8 @@ jobs:
           key: ${{ secrets.ZERO_SSH_KEY }}
           port: 1330
           script: |
-            cd /home/snackk/Downloads/wol-web-server
-            git pull origin main
+            cd /home/snackk/Downloads
+            rm -rf wol-web-server
+            git clone https://github.com/snackk/wol-web-server.git
             sudo systemctl restart app.service
             sudo systemctl status app.service
