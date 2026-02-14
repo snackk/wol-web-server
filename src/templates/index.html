@@ -171,6 +171,26 @@
 
   <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Ar Condicionado</h3>
   <div id="ac-grid" class="grid grid-cols-1 gap-4"></div>
+
+  <div id="settings-view" class="hidden space-y-6">
+    <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1 mt-4">Definições</h3>
+    <div class="material-card p-5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-[#49454f] text-[#938f99] flex items-center justify-center">
+            <i class="fas fa-sign-out-alt text-xl"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-base">Sair</h4>
+            <p class="text-xs text-[#938f99]">Terminar sessão</p>
+          </div>
+        </div>
+        <a href="/logout" class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
 </main>
 
 <nav class="fixed bottom-0 left-0 right-0 bg-[#2b2930]/90 backdrop-blur-xl border-t border-[#49454f] safe-area-bottom z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
@@ -407,7 +427,34 @@
     }
   }
 
-  function switchTab(tab) { vibrate(); }
+  function switchTab(tab) { 
+    vibrate();
+    const mainContentElements = document.querySelectorAll('#main-content > h3, #main-content > div:not(#settings-view)');
+    const settingsView = document.getElementById('settings-view');
+    const homeBtn = document.querySelector('button[onclick*="home"]');
+    const settingsBtn = document.querySelector('button[onclick*="settings"]');
+    const viewTitle = document.getElementById('view-title');
+
+    if (tab === 'settings') {
+      mainContentElements.forEach(el => el.classList.add('hidden'));
+      settingsView.classList.remove('hidden');
+      settingsBtn.classList.add('text-[#d0bcff]');
+      settingsBtn.classList.remove('text-[#938f99]');
+      homeBtn.classList.add('text-[#938f99]');
+      homeBtn.classList.remove('text-[#d0bcff]');
+      homeBtn.querySelector('div').classList.add('hidden');
+      viewTitle.textContent = 'Definições';
+    } else {
+      mainContentElements.forEach(el => el.classList.remove('hidden'));
+      settingsView.classList.add('hidden');
+      homeBtn.classList.add('text-[#d0bcff]');
+      homeBtn.classList.remove('text-[#938f99]');
+      settingsBtn.classList.add('text-[#938f99]');
+      settingsBtn.classList.remove('text-[#d0bcff]');
+      homeBtn.querySelector('div').classList.remove('hidden');
+      viewTitle.textContent = 'Início';
+    }
+  }
   function vibrate() { if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(10); }
 
   async function updateStatus() {

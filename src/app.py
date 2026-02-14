@@ -1,10 +1,13 @@
-from flask import Flask, jsonify, render_template, request, redirect, url_for, Response, send_from_directory
+from flask import Flask, jsonify, render_template, request, redirect, url_for, Response, send_from_directory, session
 from functools import wraps
 import requests
 import os
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timezone, timedelta
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.permanent_session_lifetime = timedelta(days=31)
 
 @app.route('/manifest.json')
 def serve_manifest():
@@ -63,20 +66,35 @@ def check_auth(username, password):
         return False
     return username == USERNAME and password == PASSWORD
 
-def authenticate():
-    return Response(
-        "Login required.", 401,
-        {"WWW-Authenticate": 'Basic realm="Login Required"'}
-    )
-
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
-            return authenticate()
+        if not session.get('authenticated'):
+            return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        if check_auth(username, password):
+            session.permanent = True
+            session['authenticated'] = True
+            next_page = request.args.get('next')
+            if next_page and not next_page.startswith('/'):
+                next_page = None
+            return redirect(next_page or url_for('index'))
+        return render_template('login.html', error="Invalid credentials")
+    return render_template('login.html')
+
+
+@app.route("/logout")
+def logout():
+    session.pop('authenticated', None)
+    return redirect(url_for('login'))
 
 
 @app.route("/")
