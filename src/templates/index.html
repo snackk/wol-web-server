@@ -196,13 +196,15 @@
 <nav class="fixed bottom-0 left-0 right-0 bg-[#2b2930]/90 backdrop-blur-xl border-t border-[#49454f] safe-area-bottom z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
   <div class="h-20 flex items-center px-8">
     <button onclick="switchTab('home')" class="nav-btn flex-1 flex flex-col items-center gap-1 text-[#d0bcff]">
-      <div class="w-16 h-8 rounded-full bg-[#d0bcff]/20 flex items-center justify-center">
+      <div class="active-indicator w-16 h-8 rounded-full bg-[#d0bcff]/20 flex items-center justify-center">
         <i class="fas fa-house-chimney text-lg"></i>
       </div>
       <span class="text-[10px] font-medium">Início</span>
     </button>
     <button onclick="switchTab('settings')" class="nav-btn flex-1 flex flex-col items-center gap-1 text-[#938f99]">
-      <i class="fas fa-cog text-lg"></i>
+      <div class="active-indicator w-16 h-8 rounded-full bg-transparent flex items-center justify-center">
+        <i class="fas fa-cog text-lg"></i>
+      </div>
       <span class="text-[10px] font-medium">Definições</span>
     </button>
   </div>
@@ -438,20 +440,30 @@
     if (tab === 'settings') {
       mainContentElements.forEach(el => el.classList.add('hidden'));
       settingsView.classList.remove('hidden');
+      
+      // Update Buttons Styling
       settingsBtn.classList.add('text-[#d0bcff]');
       settingsBtn.classList.remove('text-[#938f99]');
+      settingsBtn.querySelector('.active-indicator').classList.replace('bg-transparent', 'bg-[#d0bcff]/20');
+      
       homeBtn.classList.add('text-[#938f99]');
       homeBtn.classList.remove('text-[#d0bcff]');
-      homeBtn.querySelector('div').classList.add('hidden');
+      homeBtn.querySelector('.active-indicator').classList.replace('bg-[#d0bcff]/20', 'bg-transparent');
+      
       viewTitle.textContent = 'Definições';
     } else {
       mainContentElements.forEach(el => el.classList.remove('hidden'));
       settingsView.classList.add('hidden');
+      
+      // Update Buttons Styling
       homeBtn.classList.add('text-[#d0bcff]');
       homeBtn.classList.remove('text-[#938f99]');
+      homeBtn.querySelector('.active-indicator').classList.replace('bg-transparent', 'bg-[#d0bcff]/20');
+      
       settingsBtn.classList.add('text-[#938f99]');
       settingsBtn.classList.remove('text-[#d0bcff]');
-      homeBtn.querySelector('div').classList.remove('hidden');
+      settingsBtn.querySelector('.active-indicator').classList.replace('bg-[#d0bcff]/20', 'bg-transparent');
+      
       viewTitle.textContent = 'Início';
     }
   }
