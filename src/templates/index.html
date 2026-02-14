@@ -1,176 +1,476 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-PT" class="dark">
 <head>
   <meta charset="UTF-8">
-  <title>snack-media</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.deep_purple-indigo.min.css">
-  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,700">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Ctext y='56' font-size='56'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E" type="image/svg+xml">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Home Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo.png">
+
   <style>
-    html, body, .root-container {
-      margin: 0; padding: 0; min-height: 100vh; background: linear-gradient(135deg, #667eea, #764ba2);
-      font-family: 'Roboto', sans-serif; color: #fff;
+    :root {
+      --md-sys-color-primary: #d0bcff;
+      --md-sys-color-on-primary: #381e72;
+      --md-sys-color-surface: #1c1b1f;
+      --md-sys-color-surface-container: #2b2930;
+      --md-sys-color-outline: #938f99;
+      --md-sys-color-secondary-container: #49454f;
     }
-    .center-container {
-      display: flex; align-items: center; justify-content: center; width: 100vw; height: 44vh;
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--md-sys-color-surface);
+      color: #e6e1e5;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      overflow: hidden; /* Keeps UI fixed like a native app */
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-    .power-button-container {
-      position: relative; width: 80px; height: 80px;
+
+    /* Fixed Header Spacing for Dynamic Island */
+    .safe-area-top {
+      padding-top: calc(env(safe-area-inset-top) + 6px);
     }
-    .power-container {
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-      display: flex; align-items: center; justify-content: center;
+
+    /* Fixed Navbar Spacing for Home Indicator */
+    .safe-area-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
     }
-    .footer {
-      position: fixed; left: 0; bottom: 0; width: 100%;
-      text-align: center; padding: 16px 0; font-size: 14px; color: #d9d6ff;
-      opacity: 0.97; background: transparent; z-index: 99;
+
+    .material-card {
+      background-color: var(--md-sys-color-surface-container);
+      border-radius: 24px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .footer a { color: #b2b4fa; text-decoration: none; font-weight: bold; }
-    .footer a:hover { text-decoration: underline; color: #fff; }
-    .statuscake-graph-wrap {
-      width: 98vw; max-width: 900px; margin: 0 auto; background: #ffffff0a;
-      border-radius: 16px; box-shadow: 0 2px 13px rgba(80,74,152,0.13);
-      padding: 0.8em 0.3em 1.4em 0.3em; margin-bottom: 25px;
-      display: flex; flex-direction: column; align-items: center;
+
+    .material-card:active {
+      transform: scale(0.97);
+      background-color: var(--md-sys-color-secondary-container);
     }
-    .statuscake-title {
-      font-size: 1.01em; font-weight: 500; letter-spacing: 0.4px; margin-bottom: 0.9em; color: #efeefd; text-align: left;
-      width: 100%; box-sizing: border-box; padding-left: 7px; padding-top: 8px;
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
     }
-    #periodsChart {
-      width: 100% !important;
-      max-width: 100%;
-      height: 220px !important;
-      display: block;
-      margin: 0 auto;
-      background: transparent;
+
+    .temp-dial {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: conic-gradient(from 180deg, #381e72 0%, #d0bcff 50%, #381e72 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    @media (max-width: 568px) {
-      .center-container { height: 32vh; }
-      .power-button-container { width: 54px; height: 54px; }
-      .statuscake-graph-wrap { padding: 0.4em 1vw 1.1em 1vw; }
-      #periodsChart { height: 160px !important; }
+
+    .temp-dial-inner {
+      width: 150px;
+      height: 150px;
+      background: var(--md-sys-color-surface);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
+
+    .view-content {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mode-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--md-sys-color-surface-container);
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary);
+    }
+
+    ::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
-<div class="root-container">
-  <div class="center-container">
-    <form action="/send-wol/" method="POST">
-      <div class="power-button-container">
-        <button type="submit" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-shadow--8dp">
-          <span class="power-container">
-            <i class="material-icons">power_settings_new</i>
-          </span>
+
+<header class="safe-area-top sticky top-0 bg-[#1c1b1f]/80 backdrop-blur-md z-40 px-6 pb-4 flex justify-between items-center">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-[#d0bcff] flex items-center justify-center shadow-lg shadow-[#d0bcff]/20">
+      <i class="fas fa-house-user text-[#381e72] text-lg"></i>
+    </div>
+    <div>
+      <h2 id="view-title" class="text-xl font-bold leading-tight">Home</h2>
+      <p class="text-[9px] text-[#938f99] uppercase tracking-[0.2em] font-medium">Dashboard</p>
+    </div>
+  </div>
+</header>
+
+<main id="main-content" class="flex-1 overflow-y-auto px-6 pb-32 space-y-6">
+  <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1 mt-4">Estado</h3>
+
+  <div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+    <div class="bg-[#2b2930] p-4 rounded-3xl min-w-[140px] border border-[#49454f]/30">
+      <i class="fas fa-house-chimney text-blue-400 mb-2"></i>
+      <p class="text-xs text-[#938f99]">Temp. média indoor</p>
+      <p id="avg-indoor-temp" class="text-lg font-bold">--°C</p>
+    </div>
+    <div class="bg-[#2b2930] p-4 rounded-3xl min-w-[140px] border border-[#49454f]/30">
+      <i class="fas fa-tree text-green-400 mb-2"></i>
+      <p class="text-xs text-[#938f99]">Temp. média outdoor</p>
+      <p id="avg-outdoor-temp" class="text-lg font-bold">--°C</p>
+    </div>
+  </div>
+
+  <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Switches</h3>
+  <div id="switches-grid" class="grid grid-cols-1 gap-4">
+    <div onclick="toggleSwitch('gaming')" class="material-card p-5 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div id="switch-icon-gaming" class="w-12 h-12 rounded-2xl bg-[#49454f] text-[#938f99] flex items-center justify-center transition-colors">
+          <i class="fas fa-desktop text-xl"></i>
+        </div>
+        <div>
+          <h4 class="font-bold text-base">Gaming PC</h4>
+          <div class="flex items-center gap-2">
+            <span id="switch-status-gaming" class="status-badge bg-[#49454f] text-[#938f99]">
+              Desligado
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center">
+        <button id="switch-btn-gaming" class="w-10 h-10 rounded-full bg-[#2b2930] flex items-center justify-center border border-[#49454f] active:scale-90 transition-transform">
+          <i class="fas fa-bolt text-[#938f99]"></i>
         </button>
       </div>
-    </form>
-    <div style="margin-left: 20px;">
-      <a href="/climate" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored mdl-shadow--8dp">
-        <i class="material-icons">thermostat</i>
-      </a>
     </div>
   </div>
-  <div class="statuscake-graph-wrap">
-    <div class="statuscake-title">Uptime periods history</div>
-    <canvas id="periodsChart"></canvas>
-    <div style="margin-top:6px;font-size:0.98em;opacity:0.77;text-align:left;width:100%;padding-left:7px;">
-      <span style="display:inline-block;width:11px;height:11px;background:#24c361;border-radius:3px;margin-right:4px;vertical-align:middle"></span>Up
-      <span style="display:inline-block;width:11px;height:11px;background:#ff5c5c;border-radius:3px;margin-left:20px;margin-right:4px;vertical-align:middle"></span>Down
-    </div>
+
+  <h3 class="text-sm font-medium text-[#d0bcff] uppercase tracking-widest ml-1">Ar Condicionado</h3>
+  <div id="ac-grid" class="grid grid-cols-1 gap-4"></div>
+</main>
+
+<nav class="fixed bottom-0 left-0 right-0 bg-[#2b2930]/90 backdrop-blur-xl border-t border-[#49454f] safe-area-bottom z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
+  <div class="h-20 flex items-center px-8">
+    <button onclick="switchTab('home')" class="nav-btn flex-1 flex flex-col items-center gap-1 text-[#d0bcff]">
+      <div class="w-16 h-8 rounded-full bg-[#d0bcff]/20 flex items-center justify-center">
+        <i class="fas fa-house-chimney text-lg"></i>
+      </div>
+      <span class="text-[10px] font-medium">Início</span>
+    </button>
+    <button onclick="switchTab('settings')" class="nav-btn flex-1 flex flex-col items-center gap-1 text-[#938f99]">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="text-[10px] font-medium">Definições</span>
+    </button>
   </div>
-  <div class="footer">
-    Made by <a href="https://github.com/snackk" target="_blank">@snackk</a> with love <span style="font-size:1.1em;">❤️</span>
+</nav>
+
+<div id="control-modal" class="fixed inset-0 z-[60] bg-black/80 hidden flex flex-col justify-end">
+  <div id="modal-content" class="bg-[#1c1b1f] w-full rounded-t-[40px] p-8 view-content max-h-[90vh] overflow-y-auto transition-transform duration-200 safe-area-bottom">
+    <div class="w-12 h-1.5 bg-[#49454f] rounded-full mx-auto mb-8 cursor-grab" id="swipe-handle"></div>
+
+    <div class="flex justify-between items-start mb-8">
+      <div>
+        <h3 id="modal-room-name" class="text-3xl font-bold">Sala de estar</h3>
+        <p class="text-[#938f99]">Bosch Climate 3000i</p>
+      </div>
+      <button onclick="toggleACPower()" id="power-btn" class="w-14 h-14 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center text-xl transition-all">
+        <i class="fas fa-power-off"></i>
+      </button>
+    </div>
+
+    <div class="flex flex-col items-center py-6">
+      <div class="temp-dial">
+        <div class="temp-dial-inner">
+          <span class="text-xs text-[#938f99] font-medium">Ajustar para</span>
+          <div class="flex items-baseline">
+            <span id="target-temp" class="text-5xl font-bold">22</span>
+            <span class="text-2xl font-medium text-[#d0bcff]">°C</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-12 mt-8">
+        <button onclick="adjustTemp(-0.5)" class="w-12 h-12 rounded-full bg-[#2b2930] flex items-center justify-center active:scale-90">
+          <i class="fas fa-minus"></i>
+        </button>
+        <button onclick="adjustTemp(0.5)" class="w-12 h-12 rounded-full bg-[#2b2930] flex items-center justify-center active:scale-90">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <p class="text-xs font-medium text-[#938f99] uppercase tracking-widest mb-4">Modo de Operação</p>
+      <div class="flex justify-between">
+        <button onclick="setMode('cool')" class="mode-btn" id="mode-cool"><i class="fas fa-snowflake"></i></button>
+        <button onclick="setMode('heat')" class="mode-btn" id="mode-heat"><i class="fas fa-sun"></i></button>
+        <button onclick="setMode('fan')" class="mode-btn" id="mode-fan"><i class="fas fa-fan"></i></button>
+        <button onclick="setMode('dry')" class="mode-btn" id="mode-dry"><i class="fas fa-droplet"></i></button>
+        <button onclick="setMode('auto')" class="mode-btn" id="mode-auto"><i class="fas fa-wand-magic-sparkles"></i></button>
+      </div>
+    </div>
+
+    <button onclick="confirmChanges()" id="confirm-btn" class="w-full bg-[#d0bcff] text-[#381e72] font-bold py-4 rounded-full mt-12 mb-4 flex items-center justify-center gap-2">
+      <span>Confirmar Ajustes</span>
+    </button>
   </div>
 </div>
-<script>
-  const labels = {{ chart_labels|tojson }};
-  const values = {{ chart_values|tojson }};
 
-  const ctx = document.getElementById('periodsChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels.map(
-          l => new Date(l).toLocaleString(undefined, {
-            month:'short', day:'numeric', hour:'2-digit',minute:'2-digit'
-          })
-      ),
-      datasets: [{
-        label: 'Status',
-        data: values,
-        stepped: true,
-        borderColor: function(context) {
-          if (!context.chart) return null;
-          const chartctx = context.chart.ctx;
-          const width = context.chart.width;
-          const gradient = chartctx.createLinearGradient(0, 0, width, 0);
-          for(let i=0;i<values.length;i++) {
-            let stop = i/(values.length-1||1);
-            let color = values[i]===1 ? '#24c361' : '#ff5c5c';
-            gradient.addColorStop(stop, color);
-          }
-          return gradient;
-        },
-        backgroundColor: function(context) {
-          if (!context.chart) return null;
-          const chartctx = context.chart.ctx;
-          const width = context.chart.width;
-          const gradient = chartctx.createLinearGradient(0, 0, width, 0);
-          for(let i=0;i<values.length;i++) {
-            let stop = i/(values.length-1||1);
-            let color = values[i]===1 ? 'rgba(36,195,97,0.17)' : 'rgba(255,92,92,0.14)';
-            gradient.addColorStop(stop, color);
-          }
-          return gradient;
-        },
-        borderWidth: 3,
-        fill: true,
-        pointRadius: 3,
-        pointBackgroundColor: values.map(v => v===1 ? '#24c361' : '#ff5c5c'),
-        pointBorderColor: values.map(v => v===1 ? '#24c361' : '#ff5c5c')
-      }]
-    },
-    options: {
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function(ctx){
-              return ctx.parsed.y === 1 ? "Up" : "Down";
-            }
-          }
-        }
-      },
-      elements: {
-        line: { borderJoinStyle: 'miter' },
-        point: { pointStyle: 'circle' }
-      },
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          min: -0.1,
-          max: 1.1,
-          ticks: {
-            stepSize: 1,
-            color: '#efeefd',
-            callback: function(value){ return value===1 ? "Up" : (value===0 ? "Down" : ""); }
-          },
-          grid: { color: 'rgba(255,255,255,0.12)' }
-        },
-        x: {
-          grid: { color: 'rgba(255,255,255,0.08)' },
-          ticks: { color: '#efeefd', autoSkip: true, maxTicksLimit: 13 }
-        }
-      }
+<script>
+  const rooms = [
+    { id: 'sala', name: 'Sala de estar', temp: 21, target: 21, status: 'OFF', mode: 'auto' },
+    { id: 'suite', name: 'Suite', temp: 20, target: 19, status: 'OFF', mode: 'cool' },
+    { id: 'escritorio', name: 'Escritório', temp: 22, target: 20, status: 'OFF', mode: 'cool' },
+    { id: 'visitas', name: 'Quarto Visitas', temp: 19, target: 19, status: 'OFF', mode: 'cool' },
+    { id: 'cozinha', name: 'Cozinha', temp: 23, target: 19, status: 'OFF', mode: 'cool' }
+  ];
+
+  const switches = { gaming: { status: 'OFF', name: 'Gaming PC' } };
+  let activeRoomId = null;
+  let roomBackup = null;
+
+  function renderGrid() {
+    const grid = document.getElementById('ac-grid');
+    grid.innerHTML = rooms.map(room => `
+      <div onclick="openControl('${room.id}')" class="material-card p-5 flex items-center justify-between ${room.online === false ? 'opacity-50' : ''}">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl ${room.status === 'ON' ? 'bg-[#d0bcff] text-[#381e72]' : 'bg-[#49454f] text-[#938f99]'} flex items-center justify-center transition-colors">
+            <i class="fas ${getModeIcon(room.mode)} text-xl"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-base">${room.name}</h4>
+            <div class="flex items-center gap-2">
+              <span class="status-badge ${room.status === 'ON' ? 'bg-green-500/20 text-green-400' : 'bg-[#49454f] text-[#938f99]'}">
+                ${room.online === false ? 'Offline' : (room.status === 'ON' ? 'Ligado' : 'Desligado')}
+              </span>
+              <span class="text-[10px] text-[#938f99]">• ${room.mode.toUpperCase()}</span>
+            </div>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="text-2xl font-bold">${room.online === false ? '--' : room.temp}°</p>
+          <p class="text-[10px] text-[#938f99]">Meta: ${room.online === false ? '--' : room.target}°</p>
+        </div>
+      </div>`).join('');
+  }
+
+  function getModeIcon(mode) {
+    const icons = { cool: 'fa-snowflake', heat: 'fa-sun', fan: 'fa-fan', dry: 'fa-droplet', auto: 'fa-wand-magic-sparkles' };
+    return icons[mode] || 'fa-wind';
+  }
+
+  function openControl(roomId) {
+    activeRoomId = roomId;
+    const room = rooms.find(r => r.id === roomId);
+    roomBackup = { ...room };
+    document.getElementById('modal-room-name').textContent = room.name;
+    document.getElementById('target-temp').textContent = room.target;
+    updatePowerButtonUI(room.status);
+    updateModeButtonsUI(room.mode);
+    document.getElementById('control-modal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    if (roomBackup && activeRoomId) {
+      const roomIndex = rooms.findIndex(r => r.id === activeRoomId);
+      if (roomIndex !== -1) { rooms[roomIndex] = { ...roomBackup }; }
     }
-  });
+    roomBackup = null;
+    activeRoomId = null;
+    const modal = document.getElementById('control-modal');
+    const modalContent = document.getElementById('modal-content');
+    modal.classList.add('hidden');
+    modalContent.style.transform = 'translateY(0)';
+    renderGrid();
+  }
+
+  async function confirmChanges() {
+    const btn = document.getElementById('confirm-btn');
+    const room = rooms.find(r => r.id === activeRoomId);
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A enviar...';
+    try {
+      const response = await fetch('/climate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, mode: room.mode, temp: room.target, status: room.status })
+      });
+      if (response.ok) {
+        roomBackup = null;
+        btn.className = "w-full bg-green-500 text-white font-bold py-4 rounded-full mt-12 mb-4";
+        btn.innerHTML = '<i class="fas fa-check"></i> Concluído';
+        setTimeout(() => {
+          btn.className = "w-full bg-[#d0bcff] text-[#381e72] font-bold py-4 rounded-full mt-12 mb-4";
+          btn.innerHTML = 'Confirmar Ajustes';
+          btn.disabled = false;
+          closeModal();
+        }, 800);
+      } else { throw new Error('Falha'); }
+    } catch (err) {
+      btn.className = "w-full bg-red-500 text-white font-bold py-4 rounded-full mt-12 mb-4";
+      btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro na ligação';
+      setTimeout(() => {
+        btn.className = "w-full bg-[#d0bcff] text-[#381e72] font-bold py-4 rounded-full mt-12 mb-4";
+        btn.innerHTML = 'Tentar Novamente';
+        btn.disabled = false;
+      }, 2000);
+    }
+  }
+
+  function adjustTemp(val) {
+    const room = rooms.find(r => r.id === activeRoomId);
+    room.target = Math.max(16, Math.min(30, room.target + val));
+    document.getElementById('target-temp').textContent = room.target;
+    vibrate();
+  }
+
+  function setMode(mode) {
+    const room = rooms.find(r => r.id === activeRoomId);
+    room.mode = mode;
+    updateModeButtonsUI(mode);
+    vibrate();
+  }
+
+  function toggleACPower() {
+    const room = rooms.find(r => r.id === activeRoomId);
+    room.status = room.status === 'ON' ? 'OFF' : 'ON';
+    updatePowerButtonUI(room.status);
+    vibrate();
+  }
+
+  function updatePowerButtonUI(status) {
+    const btn = document.getElementById('power-btn');
+    btn.className = status === 'ON' ?
+        'w-14 h-14 rounded-2xl bg-green-500/20 text-green-400 flex items-center justify-center text-xl transition-all' :
+        'w-14 h-14 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center text-xl transition-all';
+  }
+
+  function updateModeButtonsUI(activeMode) {
+    ['cool', 'heat', 'fan', 'dry', 'auto'].forEach(m => {
+      const btn = document.getElementById(`mode-${m}`);
+      if (m === activeMode) btn.classList.add('active'); else btn.classList.remove('active');
+    });
+  }
+
+  async function toggleSwitch(id) {
+    vibrate();
+    const sw = switches[id];
+    const newStatus = sw.status === 'ON' ? 'OFF' : 'ON';
+    updateSwitchUI(id, newStatus);
+    try {
+      const response = await fetch(`/switch/${id}/${newStatus}`, { method: 'POST' });
+      if (!response.ok) throw new Error();
+      sw.status = newStatus;
+    } catch (e) { updateSwitchUI(id, sw.status); }
+  }
+
+  function updateSwitchUI(id, status) {
+    const icon = document.getElementById(`switch-icon-${id}`);
+    const badge = document.getElementById(`switch-status-${id}`);
+    const btn = document.getElementById(`switch-btn-${id}`);
+    const btnIcon = btn ? btn.querySelector('i') : null;
+    if (status === 'ON') {
+      icon.className = 'w-12 h-12 rounded-2xl bg-[#d0bcff] text-[#381e72] flex items-center justify-center transition-colors';
+      badge.className = 'status-badge bg-green-500/20 text-green-400';
+      badge.textContent = 'Ligado';
+      if (btn) { btn.classList.replace('bg-[#2b2930]', 'bg-[#d0bcff]/20'); btn.classList.replace('border-[#49454f]', 'border-[#d0bcff]/30'); }
+      if (btnIcon) btnIcon.className = 'fas fa-bolt text-[#d0bcff]';
+    } else {
+      icon.className = 'w-12 h-12 rounded-2xl bg-[#49454f] text-[#938f99] flex items-center justify-center transition-colors';
+      badge.className = 'status-badge bg-[#49454f] text-[#938f99]';
+      badge.textContent = 'Desligado';
+      if (btn) { btn.classList.replace('bg-[#d0bcff]/20', 'bg-[#2b2930]'); btn.classList.replace('border-[#d0bcff]/30', 'border-[#49454f]'); }
+      if (btnIcon) btnIcon.className = 'fas fa-bolt text-[#938f99]';
+    }
+  }
+
+  function switchTab(tab) { vibrate(); }
+  function vibrate() { if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(10); }
+
+  async function updateStatus() {
+    try {
+      const response = await fetch('/climate/status');
+      if (response.ok) {
+        const data = await response.json();
+        const statuses = data.devices;
+        if (data.averages) {
+          if (data.averages.indoor !== null) document.getElementById('avg-indoor-temp').textContent = `${data.averages.indoor}°C`;
+          if (data.averages.outdoor !== null) document.getElementById('avg-outdoor-temp').textContent = `${data.averages.outdoor}°C`;
+        }
+        if (data.switches) {
+          Object.keys(data.switches).forEach(id => {
+            if (switches[id]) { switches[id].status = data.switches[id].status; updateSwitchUI(id, switches[id].status); }
+          });
+        }
+        rooms.forEach(room => {
+          if (statuses[room.id] && statuses[room.id].online) {
+            const s = statuses[room.id];
+            room.temp = s.temp !== undefined ? Math.round(s.temp * 10) / 10 : room.temp;
+            room.target = s.target !== undefined ? s.target : room.target;
+            room.status = s.power ? 'ON' : 'OFF';
+            room.mode = s.mode || room.mode;
+            room.online = true;
+          } else { room.online = false; }
+        });
+        renderGrid();
+      }
+    } catch (err) {}
+  }
+
+  window.onload = () => {
+    renderGrid();
+    updateStatus();
+    setInterval(updateStatus, 10000);
+    const modal = document.getElementById('control-modal');
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+    // Swipe down to close
+    const modalContent = document.getElementById('modal-content');
+    let touchStartY = 0;
+    modalContent.addEventListener('touchstart', (e) => {
+      if (modalContent.scrollTop === 0) { touchStartY = e.touches[0].clientY; modalContent.style.transition = 'none'; }
+      else { touchStartY = 0; }
+    }, { passive: true });
+    modalContent.addEventListener('touchmove', (e) => {
+      if (touchStartY === 0) return;
+      const deltaY = e.touches[0].clientY - touchStartY;
+      if (deltaY > 0) {
+        modalContent.style.transform = `translateY(${deltaY}px)`;
+        if (e.cancelable) e.preventDefault();
+      }
+    }, { passive: false });
+    modalContent.addEventListener('touchend', (e) => {
+      if (touchStartY === 0) return;
+      const deltaY = e.changedTouches[0].clientY - touchStartY;
+      modalContent.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      if (deltaY > 100) closeModal(); else modalContent.style.transform = 'translateY(0)';
+      touchStartY = 0;
+    });
+  };
 </script>
 </body>
 </html>

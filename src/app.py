@@ -75,11 +75,6 @@ def index():
     return render_template('index.html')
 
 
-@app.route("/climate", methods=["GET"])
-def climate():
-    return render_template('climate.html')
-
-
 @app.route("/send-wol/", methods=["POST"])
 @requires_auth
 def send_wol():

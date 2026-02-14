@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gata - Os 31 :) </title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #2c3e50;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border: 4px solid #f1c40f; /* Dourado para celebrar */
+    }
+
+    canvas {
+      background-color: #87CEEB;
+      display: block;
+    }
+
+    #ui-layer {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      pointer-events: none;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    .hud-text {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    #message-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      display: none;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid white;
+      z-index: 100;
+    }
+
+    h1 { margin: 0 0 10px 0; color: #f1c40f; }
+    p { font-size: 18px; }
+
+    .controls-hint {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #bdc3c7;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+  <div id="ui-layer">
+    <div class="hud-text" style="color: #e74c3c;">Vida: <span id="life-display">100%</span></div>
+    <div class="hud-text" style="color: #f1c40f;">Prendas: <span id="gift-display">0/3</span></div>
+    <div class="hud-text" style="color: white;">Cena: <span id="level-display">Corredor</span></div>
+  </div>
+
+  <div id="message-overlay">
+    <h1 id="msg-title">Nível Concluído!</h1>
+    <p id="msg-body">Prepara-te para a próxima divisão...</p>
+  </div>
+</div>
+
+<div class="controls-hint">
+  Controlos: [A] Esquerda | [D] Direita | [W] ou [ESPAÇO] Saltar
+</div>
+
+<script>
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const uiLife = document.getElementById('life-display');
+  const uiGifts = document.getElementById('gift-display');
+  const uiLevel = document.getElementById('level-display');
+  const msgOverlay = document.getElementById('message-overlay');
+  const msgTitle = document.getElementById('msg-title');
+  const msgBody = document.getElementById('msg-body');
+
+  // --- Configurações Globais ---
+  const GRAVITY = 0.6;
+  const FRICTION = 0.8;
+  const JUMP_FORCE = -12; // Ajustado para salto mais agradável
+  const SPEED = 5;
+
+  // --- Estado do Jogo ---
+  let gameState = {
+    currentLevel: 0,
+    isPaused: false,
+    giftsCollected: 0,
+    totalGifts: 3,
+    flashMessageTimer: 0,
+    flashMessageText: ""
+  };
+
+  // --- Inputs ---
+  const keys = {
+    right: false,
+    left: false,
+    up: false
+  };
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
+    if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
+    if (e.code === 'KeyW' || e.code === 'ArrowUp' || e.code === 'Space') {
+      if (!keys.up) player.jump();
+      keys.up = true;
+    }
+  });
+
+  document.addEventListener('keyup', (e) => {
+    if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = false;
+    if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = false;
+    if (e.code === 'KeyW' || e.code === 'ArrowUp' || e.code === 'Space') keys.up = false;
+  });
+
+  // --- Classes ---
+
+  class Player {
+    constructor() {
+      this.width = 40;
+      this.height = 70;
+      this.x = 50;
+      this.y = 200;
+      this.velX = 0;
+      this.velY = 0;
+      this.isGrounded = false;
+      this.hp = 100;
+      this.facingRight = true;
+      this.invulnerable = 0; // Frames de invulnerabilidade
+    }
+
+    update() {
+      // Movimento Horizontal
+      if (keys.right) {
+        this.velX++;
+        this.facingRight = true;
+      }
+      if (keys.left) {
+        this.velX--;
+        this.facingRight = false;
+      }
+
+      this.velX *= FRICTION;
+      this.x += this.velX;
+
+      // Limites da velocidade
+      if (this.velX > SPEED) this.velX = SPEED;
+      if (this.velX < -SPEED) this.velX = -SPEED;
+
+      // Gravidade e Movimento Vertical
+      this.velY += GRAVITY;
+      this.y += this.velY;
+
+      // Limites do ecrã (Chão "morte")
+      if (this.y > canvas.height + 100) {
+        this.die();
+      }
+
+      // Invulnerabilidade
+      if (this.invulnerable > 0) this.invulnerable--;
+    }
+
+    jump() {
+      if (this.isGrounded) {
+        this.velY = JUMP_FORCE;
+        this.isGrounded = false;
+      }
+    }
+
+    takeDamage(amount) {
+      if (this.invulnerable > 0) return;
+
+      this.hp -= amount;
+      this.velY = -5; // Recuo
+      this.invulnerable = 60; // 1 segundo a 60fps
+
+      if (this.hp <= 0) {
+        this.die();
+      }
+    }
+
+    heal(amount) {
+      this.hp += amount;
+      if (this.hp > 100) this.hp = 100;
+    }
+
+    die() {
+      resetLevel();
+    }
+
+    draw() {
+      // Efeito de piscar se invulneravel
+      if (this.invulnerable > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
+
+      const x = Math.floor(this.x);
+      const y = Math.floor(this.y);
+
+      // --- Desenhar a TATIANA ---
+
+      // 1. Pernas (Calças de Ganga)
+      ctx.fillStyle = "#2980b9"; // Azul ganga
+      ctx.fillRect(x + 5, y + 40, 12, 30); // Perna Esq
+      ctx.fillRect(x + 23, y + 40, 12, 30); // Perna Dir
+
+      // 2. Sapatilhas
+      ctx.fillStyle = "#ecf0f1"; // Branco/Cinza
+      ctx.fillRect(x + 3, y + 65, 16, 5);
+      ctx.fillRect(x + 21, y + 65, 16, 5);
+
+      // 3. Tronco (Camisa Branca)
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(x + 5, y + 20, 30, 25);
+
+      // Detalhe camisa (botões)
+      ctx.fillStyle = "#bdc3c7";
+      ctx.beginPath();
+      ctx.arc(x + 20, y + 25, 1, 0, Math.PI*2);
+      ctx.arc(x + 20, y + 30, 1, 0, Math.PI*2);
+      ctx.arc(x + 20, y + 35, 1, 0, Math.PI*2);
+      ctx.fill();
+
+      // 4. Cabeça
+      ctx.fillStyle = "#f1c27d"; // Pele
+      ctx.fillRect(x + 10, y, 20, 22);
+
+      // 5. Cabelo (Castanho Escuro)
+      ctx.fillStyle = "#3e2723";
+      ctx.fillRect(x + 8, y - 5, 24, 10); // Topo
+      ctx.fillRect(x + 8, y, 6, 25); // Lado esq
+      if (this.facingRight) {
+        ctx.fillRect(x + 26, y, 6, 25); // Lado dir
+      } else {
+        ctx.fillRect(x + 26, y, 6, 25);
+      }
+
+      // 6. Óculos (Dourados)
+      ctx.strokeStyle = "#f1c40f";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (this.facingRight) {
+        ctx.rect(x + 18, y + 8, 6, 4);
+        ctx.rect(x + 25, y + 8, 6, 4);
+        ctx.moveTo(x + 24, y + 10); ctx.lineTo(x + 25, y + 10); // Ponte
+      } else {
+        ctx.rect(x + 9, y + 8, 6, 4);
+        ctx.rect(x + 16, y + 8, 6, 4);
+        ctx.moveTo(x + 15, y + 10); ctx.lineTo(x + 16, y + 10); // Ponte
+      }
+      ctx.stroke();
+    }
+  }
+
+  class Platform {
+    constructor(x, y, w, h, type = 'normal', moving = false, label = '') {
+      this.x = x;
+      this.y = y;
+      this.w = w;
+      this.h = h;
+      this.type = type; // normal, sofa, drawer, monitor
+      this.moving = moving;
+      this.label = label; // Nova propriedade para o texto
+
+      // Movimento
+      this.origX = x;
+      this.moveRange = 100;
+      this.moveSpeed = 2;
+      this.moveDir = 1;
+    }
+
+    update() {
+      if (this.moving) {
+        this.x += this.moveSpeed * this.moveDir;
+        if (this.x > this.origX + this.moveRange || this.x < this.origX) {
+          this.moveDir *= -1;
+        }
+      }
+    }
+
+    draw(cameraX) {
+      const drawX = this.x - cameraX;
+
+      if (this.type === 'normal') {
+        ctx.fillStyle = "#7f8c8d"; // Cimento/Piso
+        ctx.fillRect(drawX, this.y, this.w, this.h);
+        // Borda
+        ctx.strokeStyle = "#2c3e50";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(drawX, this.y, this.w, this.h);
+      } else if (this.type === 'sofa') {
+        ctx.fillStyle = "#e67e22"; // Laranja sofá
+        // Desenhar almofada arredondada
+        ctx.beginPath();
+        ctx.roundRect(drawX, this.y, this.w, this.h, 10);
+        ctx.fill();
+        ctx.strokeStyle = "#d35400";
+        ctx.stroke();
+      } else if (this.type === 'wood') {
+        ctx.fillStyle = "#8d6e63"; // Madeira
+        ctx.fillRect(drawX, this.y, this.w, this.h);
+        ctx.fillStyle = "#5d4037"; // Detalhe gaveta
+        if(this.h > 20) ctx.fillRect(drawX + 5, this.y + 5, this.w - 10, 15);
+      } else if (this.type === 'monitor') {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(drawX, this.y, this.w, this.h);
+        ctx.fillStyle = "#3498db"; // Ecrã
+        ctx.fillRect(drawX + 2, this.y + 2, this.w - 4, this.h - 10);
+      }
+
+      // --- Desenhar Legenda (Se existir) ---
+      if (this.label) {
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.font = "bold 16px Arial";
+        ctx.textAlign = "center";
+
+        const textX = drawX + this.w / 2;
+        const textY = this.y - 10;
+
+        ctx.strokeText(this.label, textX, textY);
+        ctx.fillText(this.label, textX, textY);
+      }
+    }
+  }
+
+  class Enemy {
+    constructor(x, y, type) {
+      this.x = x;
+      this.y = y;
+      this.w = type === 'snake' ? 40 : 50;
+      this.h = type === 'snake' ? 15 : 30;
+      this.type = type; // 'snake', 'dog'
+      this.origX = x;
+      this.patrolRange = 120;
+      this.dir = 1;
+      this.speed = type === 'snake' ? 3 : 2;
+    }
+
+    update() {
+      this.x += this.speed * this.dir;
+      if (Math.abs(this.x - this.origX) > this.patrolRange) {
+        this.dir *= -1;
+      }
+    }
+
+    draw(cameraX) {
+      const drawX = this.x - cameraX;
+
+      if (this.type === 'dog') {
+        // Cão Raivoso
+        ctx.fillStyle = "#8e44ad"; // Roxo (raiva) ou Castanho
+        ctx.fillRect(drawX, this.y, this.w, this.h);
+        // Olhos vermelhos
+        ctx.fillStyle = "red";
+        ctx.fillRect(this.dir === 1 ? drawX + 40 : drawX + 5, this.y + 5, 5, 5);
+        // Orelhas
+        ctx.fillStyle = "#8e44ad";
+        ctx.beginPath();
+        ctx.moveTo(drawX + 10, this.y); ctx.lineTo(drawX + 15, this.y - 10); ctx.lineTo(drawX + 20, this.y);
+        ctx.fill();
+
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.font = "bold 16px Arial";
+        ctx.textAlign = "center";
+
+        const textX = drawX + this.w / 2;
+        const textY = this.y - 10;
+
+        ctx.strokeText("Cão do vizinho", textX, textY);
+        ctx.fillText("Cão do vizinho", textX, textY);
+      } else {
+        // Cobra
+        ctx.fillStyle = "#27ae60"; // Verde
+        ctx.beginPath();
+        // Corpo ondulado simples
+        ctx.ellipse(drawX + 20, this.y + 7, 20, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Lingua
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const headX = this.dir === 1 ? drawX + 40 : drawX;
+        ctx.moveTo(headX, this.y + 7);
+        ctx.lineTo(headX + (10 * this.dir), this.y + 7);
+        ctx.stroke();
+
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.font = "bold 16px Arial";
+        ctx.textAlign = "center";
+
+        const textX = drawX + this.w / 2;
+        const textY = this.y - 10;
+
+        ctx.strokeText("Sadanisca", textX, textY);
+        ctx.fillText("Sadanisca", textX, textY);
+      }
+    }
+  }
+
+  class Item {
+    constructor(x, y, type) {
+      this.x = x;
+      this.y = y;
+      this.type = type; // 'gummy', 'gift'
+      this.w = 30;
+      this.h = 30;
+      this.collected = false;
+      this.floatOffset = 0;
+    }
+
+    update() {
+      this.floatOffset = Math.sin(Date.now() / 200) * 5;
+    }
+
+    draw(cameraX) {
+      if (this.collected) return;
+      const drawX = this.x - cameraX;
+      const drawY = this.y + this.floatOffset;
+
+      if (this.type === 'gummy') {
+        // Goma (Ursinho simples)
+        ctx.fillStyle = "#e91e63"; // Rosa
+        ctx.beginPath();
+        ctx.arc(drawX + 15, drawY + 10, 8, 0, Math.PI*2); // Cabeça
+        ctx.fill();
+        ctx.fillRect(drawX + 7, drawY + 15, 16, 12); // Corpo
+      } else if (this.type === 'gift') {
+        // Prenda
+        ctx.fillStyle = "#9b59b6"; // Roxo
+        ctx.fillRect(drawX, drawY, 30, 30);
+        ctx.fillStyle = "#f1c40f"; // Fita Dourada
+        ctx.fillRect(drawX + 13, drawY, 4, 30);
+        ctx.fillRect(drawX, drawY + 13, 30, 4);
+      }
+    }
+  }
+
+  // --- Variáveis do Jogo ---
+  let player = new Player();
+  let platforms = [];
+  let enemies = [];
+  let items = [];
+  let cameraX = 0;
+  let levelWidth = 0;
+  let animationFrameId;
+
+  // --- Configuração dos Níveis ---
+
+  function loadLevel(levelIndex) {
+    gameState.currentLevel = levelIndex;
+    player = new Player(); // Reset player pos
+    platforms = [];
+    enemies = [];
+    items = [];
+    cameraX = 0;
+    keys.right = false; // Reset keys
+    keys.left = false;
+
+    // Chão padrão para evitar cair no início
+    platforms.push(new Platform(-100, 350, 400, 50));
+
+    if (levelIndex === 0) { // CENA 1: CORREDOR
+      uiLevel.textContent = "Corredor";
+      document.body.style.backgroundColor = "#dcdde1"; // Cor de parede de prédio
+      levelWidth = 2000;
+
+      // Plataformas
+      platforms.push(new Platform(300, 250, 100, 20));
+      platforms.push(new Platform(500, 200, 100, 20));
+      platforms.push(new Platform(750, 300, 150, 20));
+      platforms.push(new Platform(1000, 250, 80, 20, 'normal', true, '')); // Móvel
+
+      // Chão com buracos
+      platforms.push(new Platform(400, 350, 600, 50));
+      platforms.push(new Platform(1350, 350, 800, 50));
+
+      // Inimigos
+      enemies.push(new Enemy(600, 320, 'dog')); // Cão no meio
+
+      // Itens
+      // Goma no fim numa plataforma alta (BAIXADA para y=250 e goma y=220)
+      platforms.push(new Platform(1800, 250, 100, 20));
+      items.push(new Item(1830, 220, 'gummy'));
+
+      // Porta final (visualizada como parede preta no fim)
+
+    } else if (levelIndex === 1) { // CENA 2: SALA
+      uiLevel.textContent = "Sala";
+      document.body.style.backgroundColor = "#f39c12"; // Cor quente
+      levelWidth = 2000;
+
+      // Chão
+      platforms.push(new Platform(0, 400, 300, 50));
+      platforms.push(new Platform(600, 400, 1600, 50));
+
+      // Sofás (plataformas) - Adicionada legenda
+      platforms.push(new Platform(300, 300, 80, 20, 'sofa', false, ''));
+      platforms.push(new Platform(450, 250, 80, 20, 'sofa', false, ''));
+
+      // Inimigos
+      enemies.push(new Enemy(800, 370, 'snake'));
+      enemies.push(new Enemy(1200, 370, 'dog'));
+
+      // Móvel TV no fim (Gavetas) - Adicionada legenda
+      platforms.push(new Platform(1700, 300, 200, 100, 'wood', false, 'Móvel TV')); // O móvel
+      platforms.push(new Platform(1700, 250, 200, 20, 'wood')); // Topo
+
+      // Prenda colocada SOBRE o móvel (y=220) em vez de dentro (y=320)
+      items.push(new Item(1780, 220, 'gift'));
+
+    } else if (levelIndex === 2) { // CENA 3: ESCRITÓRIO
+      uiLevel.textContent = "Escritório";
+      document.body.style.backgroundColor = "#95a5a6";
+      levelWidth = 2200;
+
+      // Chão fragmentado
+      platforms.push(new Platform(0, 400, 400, 50));
+      platforms.push(new Platform(600, 400, 500, 50));
+      // APROXIMADO: Plataforma a seguir à cobra movida de 1200 para 1100
+      platforms.push(new Platform(1200, 400, 1100, 50));
+
+      // Mesas e prateleiras
+      platforms.push(new Platform(200, 250, 100, 20));
+      items.push(new Item(220, 220, 'gummy')); // Goma inicio
+
+      platforms.push(new Platform(400, 200, 100, 20, 'normal', true, ''));
+
+      // Secretária e Monitor
+      platforms.push(new Platform(1500, 300, 300, 100, 'wood', false, 'Secretária')); // Mesa
+      platforms.push(new Platform(1500, 250, 80, 50, 'monitor', false, 'Monitor gata')); // Monitor
+      platforms.push(new Platform(1700, 250, 80, 50, 'monitor', false, 'Monitor gato')); // Monitor
+
+      // Prenda escondida no monitor
+      items.push(new Item(1625, 220, 'gift'));
+
+      enemies.push(new Enemy(700, 370, 'snake'));
+      enemies.push(new Enemy(1400, 370, 'dog'));
+
+      // Goma fims
+      platforms.push(new Platform(1900, 250, 100, 20));
+      items.push(new Item(1930, 220, 'gummy'));
+
+    } else if (levelIndex === 3) { // CENA 4: QUARTO
+      uiLevel.textContent = "Quarto";
+      document.body.style.backgroundColor = "#e84393"; // Rosa suave
+      levelWidth = 1500;
+
+      // Nível mais fácil
+      platforms.push(new Platform(0, 400, 1500, 50));
+
+      // Cama - Adicionada Legenda
+      platforms.push(new Platform(300, 320, 200, 80, 'sofa', false, 'Cama'));
+
+      // Plataformas para o armário
+      platforms.push(new Platform(600, 250, 100, 20));
+      platforms.push(new Platform(800, 180, 300, 20));
+
+      // Armário
+      platforms.push(new Platform(1200, 200, 200, 200, 'wood', false, 'Armário'));
+
+      // Última prenda
+      items.push(new Item(1280, 170, 'gift'));
+    }
+  }
+
+  function resetLevel() {
+    // Penalidade visual ou de som poderia ser adicionada aqui
+    loadLevel(gameState.currentLevel);
+  }
+
+  function checkCollisions() {
+    player.isGrounded = false;
+
+    // 1. Plataformas
+    for (let p of platforms) {
+      // Colisão simples AABB
+      if (player.x < p.x + p.w &&
+          player.x + player.width > p.x &&
+          player.y < p.y + p.h &&
+          player.y + player.height > p.y) {
+
+        // Lógica de colisão
+        // Tocar em baixo (cabeça bate)
+        if (player.velY < 0 && player.y - player.velY >= p.y + p.h) {
+          player.velY = 0;
+          player.y = p.y + p.h;
+        }
+        // Tocar em cima (aterrar)
+        else if (player.velY >= 0 && player.y + player.height - player.velY <= p.y) {
+          player.isGrounded = true;
+          player.velY = 0;
+          player.y = p.y - player.height;
+          // Se plataforma move, arrastar player (opcional, simplificado aqui)
+          if(p.moving) {
+            player.x += p.moveSpeed * p.moveDir;
+          }
+        }
+        // Lados (colisão básica, impede movimento)
+        else if (player.velX > 0 && player.x + player.width - player.velX <= p.x) {
+          player.x = p.x - player.width;
+          player.velX = 0;
+        }
+        else if (player.velX < 0 && player.x - player.velX >= p.x + p.w) {
+          player.x = p.x + p.w;
+          player.velX = 0;
+        }
+      }
+    }
+
+    // 2. Inimigos
+    for (let e of enemies) {
+      if (player.x < e.x + e.w &&
+          player.x + player.width > e.x &&
+          player.y < e.y + e.h &&
+          player.y + player.height > e.y) {
+
+        // Dano
+        if (e.type === 'snake') player.takeDamage(100);
+        else if (e.type === 'dog') player.takeDamage(50);
+      }
+    }
+
+    // 3. Itens
+    for (let i of items) {
+      if (!i.collected &&
+          player.x < i.x + i.w &&
+          player.x + player.width > i.x &&
+          player.y < i.y + i.h &&
+          player.y + player.height > i.y) {
+
+        i.collected = true;
+        if (i.type === 'gummy') {
+          player.heal(50);
+          showFlashMessage("GOMA ;) +50 VIDA", "#e91e63");
+        } else if (i.type === 'gift') {
+          gameState.giftsCollected++;
+          showFlashMessage("Bouuuaaa!", "#f1c40f");
+
+          // Se for a última prenda e último nível, vitória
+          if (gameState.giftsCollected === 3 && gameState.currentLevel === 3) {
+            setTimeout(gameWin, 500);
+          }
+        }
+      }
+    }
+  }
+
+  function showFlashMessage(text, color) {
+    gameState.flashMessageText = text;
+    gameState.flashMessageColor = color;
+    gameState.flashMessageTimer = 60; // 1 segundo
+  }
+
+  function gameWin() {
+    cancelAnimationFrame(animationFrameId);
+    msgTitle.textContent = "Parabéns meu amor!";
+    msgTitle.style.color = "#f1c40f";
+    msgTitle.style.fontSize = "40px";
+    msgBody.innerHTML = `Espero que o teu dia seja tão gostoso quanto tu meu amor ;) <br><br>
+    Parabéns fofinha !
+    <div style="font-size:60px;">🎁</div>`;
+    msgOverlay.style.display = "block";
+  }
+
+  function levelComplete() {
+    if (gameState.currentLevel < 3) {
+      gameState.currentLevel++;
+      loadLevel(gameState.currentLevel);
+    }
+  }
+
+  // --- Loop Principal ---
+  function update() {
+    if (gameState.isPaused) return;
+
+    player.update();
+    platforms.forEach(p => p.update());
+    enemies.forEach(e => e.update());
+    items.forEach(i => i.update());
+
+    checkCollisions();
+
+    // Atualizar Camera
+    // A camera segue a jogadora, mas para no inicio e fim do nivel
+    cameraX = player.x - canvas.width / 3;
+    if (cameraX < 0) cameraX = 0;
+    if (cameraX > levelWidth - canvas.width) cameraX = levelWidth - canvas.width;
+
+    // Verificar fim de nível
+    if (player.x > levelWidth - 50) {
+      levelComplete();
+    }
+
+    // UI Updates
+    uiLife.textContent = player.hp + "%";
+    uiLife.style.color = player.hp < 30 ? 'red' : '#2ecc71';
+    uiGifts.textContent = gameState.giftsCollected + "/3";
+  }
+
+  function draw() {
+    // Limpar
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Efeito de Luz do Nível 1
+    // Desenha-se o fundo normal, depois a iluminação por cima
+
+    ctx.save();
+
+    // Translação da camera para desenhar o mundo
+    ctx.translate(-cameraX, 0);
+
+    // Desenhar mundo
+    platforms.forEach(p => p.draw(0)); // Pass 0 because we already translated context
+    items.forEach(i => i.draw(0));
+    enemies.forEach(e => e.draw(0));
+    player.draw();
+
+    // Porta do fim (visual)
+    ctx.fillStyle = "#2c3e50";
+    ctx.fillRect(levelWidth - 20, 250, 20, 150);
+
+    ctx.restore();
+
+    // Efeitos de Luz (Corredor) - Nivel 0
+    if (gameState.currentLevel === 0) {
+      // Logica da luz:
+      // 0 a 1000px (metade do nivel 2000px): Claro
+      // 1000px a 2000px: Escurece progressivamente
+
+      let darkness = 0;
+      if (player.x > 800) {
+        // Mapear posição para alpha (0 a 0.95)
+        darkness = (player.x - 800) / 1000;
+        if (darkness > 0.95) darkness = 0.95;
+      }
+
+      if (darkness > 0) {
+        // Gradiente radial para a lâmpada (simulado ao redor do jogador ou fixo)
+        // Aqui faremos um overlay simples que escurece
+        ctx.fillStyle = `rgba(0, 0, 0, ${darkness})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Simular luz em redor da Tatiana
+        if (darkness > 0.5) {
+          ctx.globalCompositeOperation = 'destination-out';
+          const grad = ctx.createRadialGradient(player.x - cameraX + 20, player.y + 35, 20, player.x - cameraX + 20, player.y + 35, 150);
+          grad.addColorStop(0, "rgba(0,0,0,1)");
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(player.x - cameraX + 20, player.y + 35, 150, 0, Math.PI*2);
+          ctx.fill();
+          ctx.globalCompositeOperation = 'source-over';
+        }
+      }
+
+      // Desenhar Lampada no teto (fixa no ecra ou no mundo?) No mundo.
+      // Como o context restore foi chamado, precisamos recalcular
+      if (cameraX < 800) {
+        ctx.save();
+        ctx.translate(-cameraX, 0);
+        ctx.fillStyle = "#f1c40f";
+        ctx.fillRect(400, 0, 10, 50); // Fio
+        ctx.beginPath(); ctx.arc(405, 60, 10, 0, Math.PI*2); ctx.fill(); // Bulbo
+        // Luz
+        ctx.fillStyle = "rgba(241, 196, 15, 0.2)";
+        ctx.beginPath();
+        ctx.moveTo(405, 60); ctx.lineTo(200, 450); ctx.lineTo(600, 450);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Flash Message
+    if (gameState.flashMessageTimer > 0) {
+      gameState.flashMessageTimer--;
+      ctx.fillStyle = gameState.flashMessageColor;
+      ctx.font = "bold 40px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(gameState.flashMessageText, canvas.width/2, canvas.height/2);
+
+      // Desenhar icone de prenda se for parabens
+      if(gameState.flashMessageText.includes("PARABÉNS")) {
+        ctx.font = "80px Arial";
+        ctx.fillText("🎁", canvas.width/2, canvas.height/2 - 60);
+      }
+    }
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  // Iniciar
+  loadLevel(0);
+  gameLoop();
+
+</script>
+</body>
+</html>
