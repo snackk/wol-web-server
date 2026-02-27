@@ -5,9 +5,35 @@ import os
 import secrets
 from datetime import datetime, timezone, timedelta
 
+# In src/app.py
+def get_secret_key():
+    env_key = os.environ.get('SECRET_KEY')
+    if env_key:
+        return env_key
+    
+    # Persistent file for secret key
+    key_file = os.path.join(os.path.dirname(__file__), '.secret_key')
+    if os.path.exists(key_file):
+        with open(key_file, 'r') as f:
+            return f.read().strip()
+    
+    # Create new key and save it
+    new_key = secrets.token_hex(32)
+    try:
+        with open(key_file, 'w') as f:
+            f.write(new_key)
+        # Set restrictive permissions if possible
+        try:
+            os.chmod(key_file, 0o600)
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return new_key
+
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-app.permanent_session_lifetime = timedelta(days=31)
+app.secret_key = get_secret_key()
+app.permanent_session_lifetime = timedelta(days=365)
 
 @app.route('/manifest.json')
 def serve_manifest():
@@ -69,9 +95,20 @@ def check_auth(username, password):
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get('authenticated'):
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
+        # First check session
+        if session.get('authenticated'):
+            return f(*args, **kwargs)
+        
+        # Then check for basic auth
+        auth = request.authorization
+        if auth and check_auth(auth.username, auth.password):
+            return f(*args, **kwargs)
+
+        # Return a 401 if it's an API call, else redirect to login
+        if request.is_json or request.path.startswith('/api/') or request.path in ['/send-wol/', '/check-emby', '/climate/status', '/climate']:
+            return jsonify({"error": "Unauthorized"}), 401
+            
+        return redirect(url_for('login', next=request.url))
     return decorated
 
 
@@ -114,6 +151,9 @@ def send_wol():
         requests.put(target_url, timeout=5)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+    if request.is_json or request.content_type == 'application/json' or request.accept_mimetypes.accept_json:
+        return jsonify({"status": "success", "message": "WOL sent"}), 200
 
     return redirect(url_for('index'))
 
@@ -200,6 +240,7 @@ def climate_status():
 
 
 @app.route("/climate", methods=["POST"])
+@requires_auth
 def set_climate():
     data = request.json
     room_id = data.get('roomId')
