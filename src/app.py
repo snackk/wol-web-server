@@ -218,14 +218,14 @@ def climate_status():
             results["devices"][room_id] = {"online": False}
     
     # Check Switches (Gaming PC status via Emby check)
-    def can_reach_server(hostname, port, timeout=3):
-        try:
-            with socket.create_connection((hostname, port), timeout=timeout):
-                return True
-        except Exception:
-            return False
+    is_emby_reachable = False
+    try:
+        # Check for 200 OK from emby.snackk-media.com
+        r_emby = requests.get("https://emby.snackk-media.com", timeout=3)
+        is_emby_reachable = (r_emby.status_code == 200)
+    except Exception:
+        pass
 
-    is_emby_reachable = can_reach_server("emby.snackk-media.com", 443)
     results["switches"]["gaming"] = {
         "status": "ON" if is_emby_reachable else "OFF",
         "name": "Gaming PC"
@@ -284,25 +284,24 @@ def health_check():
 @app.route("/check-emby", methods=["GET"])
 @requires_auth
 def check_emby_server():
-    import socket
-
-    def can_reach_server(hostname, port, timeout=5):
-        try:
-            with socket.create_connection((hostname, port), timeout=timeout):
-                return True
-        except Exception:
-            return False
-
-    is_reachable = can_reach_server("emby.snackk-media.com", 443)
+    is_reachable = False
+    status_code = None
+    try:
+        # Check for 200 OK from emby.snackk-media.com
+        response = requests.get("https://emby.snackk-media.com", timeout=5)
+        status_code = response.status_code
+        is_reachable = (status_code == 200)
+    except Exception:
+        pass
 
     response_data = {
         "reachable": is_reachable,
         "server": "emby.snackk-media.com",
-        "port": 443,
+        "status_code": status_code,
         "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     }
 
     return jsonify(response_data), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+    app.run(host="0.0.0.0", port=8080)
