@@ -352,7 +352,10 @@
           btn.disabled = false;
           closeModal();
         }, 800);
-      } else { throw new Error('Falha'); }
+      } else { 
+        if (response.status === 401) window.location.href = '/login';
+        throw new Error('Falha'); 
+      }
     } catch (err) {
       btn.className = "w-full bg-red-500 text-white font-bold py-4 rounded-full mt-12 mb-4";
       btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro na ligação';
@@ -406,7 +409,10 @@
     updateSwitchUI(id, newStatus);
     try {
       const response = await fetch(`/switch/${id}/${newStatus}`, { method: 'POST' });
-      if (!response.ok) throw new Error();
+      if (!response.ok) {
+        if (response.status === 401) window.location.href = '/login';
+        throw new Error();
+      }
       sw.status = newStatus;
     } catch (e) { updateSwitchUI(id, sw.status); }
   }
@@ -474,6 +480,7 @@
   async function updateStatus() {
     try {
       const response = await fetch('/climate/status');
+      if (response.status === 401) window.location.href = '/login';
       if (response.ok) {
         const data = await response.json();
         const statuses = data.devices;

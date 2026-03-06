@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for, Response, send_from_directory, session
 from functools import wraps
+from werkzeug.middleware.proxy_fix import ProxyFix
 import requests
 import os
 import secrets
@@ -32,8 +33,14 @@ def get_secret_key():
     return new_key
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.secret_key = get_secret_key()
 app.permanent_session_lifetime = timedelta(days=365)
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+)
 
 @app.route('/manifest.json')
 def serve_manifest():
@@ -104,8 +111,15 @@ def requires_auth(f):
         if auth and check_auth(auth.username, auth.password):
             return f(*args, **kwargs)
 
-        # Return a 401 if it's an API call, else redirect to login
-        if request.is_json or request.path.startswith('/api/') or request.path in ['/send-wol/', '/check-emby', '/climate/status', '/climate']:
+    # Return a 401 if it's an API call, else redirect to login
+        is_api_call = (
+            request.is_json or 
+            request.path.startswith('/api/') or 
+            request.path in ['/send-wol/', '/check-emby', '/climate/status', '/climate'] or 
+            '/switch/' in request.path or 
+            '/climate' in request.path
+        )
+        if is_api_call:
             return jsonify({"error": "Unauthorized"}), 401
             
         return redirect(url_for('login', next=request.url))
@@ -171,10 +185,10 @@ def toggle_switch(device_id, state):
     target_url = f"http://{hostname}/api/state/{state.upper()}"
 
     try:
-        requests.put(target_url, timeout=5)
+        response = requests.put(target_url, timeout=5)
+        return jsonify({"status": "success", "device_response": response.status_code}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    return '', 200
 
 
 @app.route("/climate/status", methods=["GET"])
